@@ -32,6 +32,9 @@ dependencies = [
 # LLM-as-judge metrics (goal accuracy, answer correctness, etc.)
 judge = ["litellm>=1.0"]
 
+# OpenAI SDK interceptor
+openai = ["openai>=1.0"]
+
 # Anthropic Claude SDK interceptor
 anthropic = ["anthropic>=0.20"]
 
@@ -52,6 +55,7 @@ postgres = ["psycopg2-binary>=2.9"]
 # Everything at once
 all = [
     "litellm>=1.0",
+    "openai>=1.0",
     "anthropic>=0.20",
     "opentelemetry-api>=1.20",
     "opentelemetry-sdk>=1.20",
@@ -70,6 +74,7 @@ dev = [
     "mypy>=1.0",
     "pre-commit>=3.0",
     "litellm>=1.0",
+    "openai>=1.0",
 ]
 
 [project.scripts]
