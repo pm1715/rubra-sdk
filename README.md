@@ -2,6 +2,7 @@
 
 **Agentic evaluation framework. Every aspect, nothing missed.**
 
+[![PyPI](https://img.shields.io/pypi/v/rubra.svg)](https://pypi.org/project/rubra/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![CI](https://github.com/pm1715/rubra-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/pm1715/rubra-sdk/actions)
