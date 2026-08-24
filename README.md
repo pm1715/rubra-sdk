@@ -1,4 +1,6 @@
-# Rubra
+<p align="center">
+  <img src="assets/wordmark.svg" alt="Rubra" width="380"/>
+</p>
 
 **Agentic evaluation framework. Every aspect, nothing missed.**
 
