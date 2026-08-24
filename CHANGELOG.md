@@ -6,8 +6,11 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-08-25
+
 ### Added
 - `evaluate(..., judge_model=...)` — goal metrics now accept any litellm-compatible model string (was hardcoded to `gpt-4o-mini`), enabling free local judge testing via Ollama (`judge_model="ollama/llama3.2"`).
+- Author metadata (`[project.authors]`) in `pyproject.toml`, so PyPI shows a maintainer name instead of just the account username.
 
 ### Fixed
 - `rubra[openai]` extra was missing from `pyproject.toml` even though `rubra.patch()` and `examples/with_openai.py` require the real `openai` package — added it (and included it in `[all]` and `[dev]`).

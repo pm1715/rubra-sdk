@@ -4,11 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rubra"
-version = "0.1.0"
+version = "0.1.1"
 description = "Rubra — Agentic evaluation framework. Every aspect, nothing missed."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
+authors = [
+    { name = "Prayansh Mishra", email = "iprayanshmishra15@gmail.com" }
+]
 keywords = ["llm", "agent", "evaluation", "ai", "agentic", "tracing", "observability", "evals"]
 classifiers = [
     "Development Status :: 3 - Alpha",
