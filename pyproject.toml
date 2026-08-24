@@ -1,0 +1,105 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rubra"
+version = "0.1.0"
+description = "Rubra — Agentic evaluation framework. Every aspect, nothing missed."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+keywords = ["llm", "agent", "evaluation", "ai", "agentic", "tracing", "observability", "evals"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# Core: 4 deps only. No LLM required. No network. No server.
+dependencies = [
+    "pydantic>=2.0",
+    "sqlalchemy>=2.0",
+    "rich>=13.0",
+    "typer>=0.9",
+]
+
+[project.optional-dependencies]
+# LLM-as-judge metrics (goal accuracy, answer correctness, etc.)
+judge = ["litellm>=1.0"]
+
+# Anthropic Claude SDK interceptor
+anthropic = ["anthropic>=0.20"]
+
+# OpenTelemetry export — send spans to Langfuse, Phoenix, Jaeger
+otel = [
+    "opentelemetry-api>=1.20",
+    "opentelemetry-sdk>=1.20",
+    "opentelemetry-exporter-otlp-proto-http>=1.20",
+]
+
+# Framework integrations
+langgraph = ["langgraph>=0.2"]
+langchain = ["langchain>=0.1", "langchain-core>=0.1"]
+
+# Local PostgreSQL backend (alternative to default SQLite)
+postgres = ["psycopg2-binary>=2.9"]
+
+# Everything at once
+all = [
+    "litellm>=1.0",
+    "anthropic>=0.20",
+    "opentelemetry-api>=1.20",
+    "opentelemetry-sdk>=1.20",
+    "opentelemetry-exporter-otlp-proto-http>=1.20",
+    "langgraph>=0.2",
+    "langchain>=0.1",
+    "langchain-core>=0.1",
+    "psycopg2-binary>=2.9",
+]
+
+# Development tools
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "ruff>=0.1",
+    "mypy>=1.0",
+    "pre-commit>=3.0",
+    "litellm>=1.0",
+]
+
+[project.scripts]
+rubra = "rubra.cli.main:app"
+
+# Auto-register the pytest plugin when rubra is installed
+[project.entry-points."pytest11"]
+rubra = "rubra.pytest_plugin"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/rubra-sdk"
+Issues = "https://github.com/yourusername/rubra-sdk/issues"
+Changelog = "https://github.com/yourusername/rubra-sdk/blob/main/CHANGELOG.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["rubra"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["N806"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
