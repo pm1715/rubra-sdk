@@ -4,7 +4,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
-[![CI](https://github.com/yourusername/rubra-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/rubra-sdk/actions)
+[![CI](https://github.com/pm1715/rubra-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/pm1715/rubra-sdk/actions)
 
 Rubra is a **trace-first** agent evaluation framework. Decorate your agent — Rubra automatically captures every tool call, LLM call, token, and cost. Then evaluate with 36 metrics including 11 tool-orchestration metrics no other framework provides.
 
@@ -220,10 +220,10 @@ def run(question: str) -> str:
 
 ## REST API + Dashboard
 
-See [rubra-server](https://github.com/yourusername/rubra-server) for the self-hosted FastAPI backend and live dashboard.
+See [rubra-server](https://github.com/pm1715/rubra-server) for the self-hosted FastAPI backend and live dashboard.
 
 ```bash
-git clone https://github.com/yourusername/rubra-server
+git clone https://github.com/pm1715/rubra-server
 cd rubra-server
 docker compose up
 # Dashboard → http://localhost:8000

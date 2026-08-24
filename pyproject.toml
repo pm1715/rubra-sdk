@@ -80,9 +80,9 @@ rubra = "rubra.cli.main:app"
 rubra = "rubra.pytest_plugin"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/rubra-sdk"
-Issues = "https://github.com/yourusername/rubra-sdk/issues"
-Changelog = "https://github.com/yourusername/rubra-sdk/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/pm1715/rubra-sdk"
+Issues = "https://github.com/pm1715/rubra-sdk/issues"
+Changelog = "https://github.com/pm1715/rubra-sdk/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["rubra"]

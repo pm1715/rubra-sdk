@@ -5,7 +5,7 @@ Thank you for your interest in contributing to Rubra!
 ## Development Setup
 
 ```bash
-git clone https://github.com/yourusername/rubra-sdk.git
+git clone https://github.com/pm1715/rubra-sdk.git
 cd rubra-sdk
 pip install -e ".[dev]"
 ```
@@ -72,5 +72,5 @@ rubra/integrations/myframework/
 
 ## Reporting Issues
 
-Use [GitHub Issues](https://github.com/yourusername/rubra-sdk/issues).  
+Use [GitHub Issues](https://github.com/pm1715/rubra-sdk/issues).  
 Include: Python version, rubra version (`rubra version`), minimal reproduction, and expected vs actual behaviour.
