@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rubra — Agentic Evaluation Framework</title>
+<meta name="description" content="Rubra is a trace-first agent evaluation framework. Decorate your agent once, capture every tool call and LLM call automatically, then evaluate across 36 metrics — including 11 tool-orchestration metrics not commonly found elsewhere.">
+<meta property="og:title" content="Rubra — Agentic Evaluation Framework">
+<meta property="og:description" content="Trace-first agent evaluation. 36 metrics, 11 unique to tool orchestration. Apache 2.0, self-hosted, zero-config.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#7a1b28">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjAwIDIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iZ3JvdW5kIiBjeD0iNTAlIiBjeT0iNTAlIiByPSI1MCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMDAwMDAwIiBzdG9wLW9wYWNpdHk9IjAuMzIiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDAwMDAwIiBzdG9wLW9wYWNpdHk9IjAiLz4KICAgIDwvcmFkaWFsR3JhZGllbnQ+CgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJsb2JlQnJpZ2h0IiBjeD0iMzglIiBjeT0iMjIlIiByPSI4NSUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZWFiNjhmIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMzglIiBzdG9wLWNvbG9yPSIjYzI0NjVhIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNzUlIiBzdG9wLWNvbG9yPSIjN2ExYjI4Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzNkMGMxMiIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0ibG9iZU1lZCIgY3g9IjM4JSIgY3k9IjIyJSIgcj0iODUlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2M5OGE3NiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjM4JSIgc3RvcC1jb2xvcj0iI2ExMjYzYSIvPgogICAgICA8c3RvcCBvZmZzZXQ9Ijc1JSIgc3RvcC1jb2xvcj0iIzYzMTMxZSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMyZTA5MGQiLz4KICAgIDwvcmFkaWFsR3JhZGllbnQ+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9ImxvYmVEYXJrIiBjeD0iMzglIiBjeT0iMjIlIiByPSI4NSUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjYTA1ZjVmIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMzglIiBzdG9wLWNvbG9yPSIjN2ExYjI4Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iNzUlIiBzdG9wLWNvbG9yPSIjNGEwZTE1Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzFmMDYwOSIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KCiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9ImhvbGUiIGN4PSI1MCUiIGN5PSIzMCUiIHI9IjgwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMzYTEwMTUiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI3MCUiIHN0b3AtY29sb3I9IiMxNTA0MDYiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDUwMTAxIi8+CiAgICA8L3JhZGlhbEdyYWRpZW50PgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJob2xlU2hhZG93IiBjeD0iNTAlIiBjeT0iNTAlIiByPSI1MCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMDAwMDAwIiBzdG9wLW9wYWNpdHk9IjAuNDUiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDAwMDAwIiBzdG9wLW9wYWNpdHk9IjAiLz4KICAgIDwvcmFkaWFsR3JhZGllbnQ+CiAgPC9kZWZzPgoKICA8ZWxsaXBzZSBjeD0iMTAwIiBjeT0iMTY2IiByeD0iNDgiIHJ5PSI5IiBmaWxsPSJ1cmwoI2dyb3VuZCkiLz4KCiAgPGVsbGlwc2UgY3g9IjEwMCIgY3k9IjEwMCIgcng9Ijk1IiByeT0iMzciIHRyYW5zZm9ybT0icm90YXRlKC0xMiAxMDAgMTAwKSIKICAgICAgICAgICBmaWxsPSJub25lIiBzdHJva2U9IiNhMzc5MmEiIHN0cm9rZS13aWR0aD0iMS44IiBvcGFjaXR5PSIwLjUiLz4KICA8ZWxsaXBzZSBjeD0iMTAwIiBjeT0iMTAwIiByeD0iOTUiIHJ5PSIzNyIgdHJhbnNmb3JtPSJyb3RhdGUoNTUgMTAwIDEwMCkiCiAgICAgICAgICAgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjYTM3OTJhIiBzdHJva2Utd2lkdGg9IjEuNiIgb3BhY2l0eT0iMC4zNSIvPgoKICA8ZyBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICAgIDxlbGxpcHNlIGN4PSIxMDAiIGN5PSI4MCIgcng9IjE2IiByeT0iMzMiIGZpbGw9InVybCgjbG9iZU1lZCkiICAgc3Ryb2tlPSIjMmUwOTBkIiBzdHJva2Utd2lkdGg9IjAuNzUiIG9wYWNpdHk9IjAuOTciIHRyYW5zZm9ybT0icm90YXRlKDAgMTAwIDEwMCkiLz4KICAgIDxlbGxpcHNlIGN4PSIxMDAiIGN5PSI4MCIgcng9IjE2IiByeT0iMzMiIGZpbGw9InVybCgjbG9iZURhcmspIiAgc3Ryb2tlPSIjMWYwNjA5IiBzdHJva2Utd2lkdGg9IjAuNzUiIG9wYWNpdHk9IjAuOTciIHRyYW5zZm9ybT0icm90YXRlKDUxLjQgMTAwIDEwMCkiLz4KICAgIDxlbGxpcHNlIGN4PSIxMDAiIGN5PSI4MCIgcng9IjE2IiByeT0iMzMiIGZpbGw9InVybCgjbG9iZURhcmspIiAgc3Ryb2tlPSIjMWYwNjA5IiBzdHJva2Utd2lkdGg9IjAuNzUiIG9wYWNpdHk9IjAuOTciIHRyYW5zZm9ybT0icm90YXRlKDEwMi44IDEwMCAxMDApIi8+CiAgICA8ZWxsaXBzZSBjeD0iMTAwIiBjeT0iODAiIHJ4PSIxNiIgcnk9IjMzIiBmaWxsPSJ1cmwoI2xvYmVEYXJrKSIgIHN0cm9rZT0iIzFmMDYwOSIgc3Ryb2tlLXdpZHRoPSIwLjc1IiBvcGFjaXR5PSIwLjk3IiB0cmFuc2Zvcm09InJvdGF0ZSgxNTQuMiAxMDAgMTAwKSIvPgogICAgPGVsbGlwc2UgY3g9IjEwMCIgY3k9IjgwIiByeD0iMTYiIHJ5PSIzMyIgZmlsbD0idXJsKCNsb2JlTWVkKSIgICBzdHJva2U9IiMyZTA5MGQiIHN0cm9rZS13aWR0aD0iMC43NSIgb3BhY2l0eT0iMC45NyIgdHJhbnNmb3JtPSJyb3RhdGUoMjA1LjYgMTAwIDEwMCkiLz4KICAgIDxlbGxpcHNlIGN4PSIxMDAiIGN5PSI4MCIgcng9IjE2IiByeT0iMzMiIGZpbGw9InVybCgjbG9iZUJyaWdodCkiIHN0cm9rZT0iIzNkMGMxMiIgc3Ryb2tlLXdpZHRoPSIwLjc1IiBvcGFjaXR5PSIwLjk3IiB0cmFuc2Zvcm09InJvdGF0ZSgyNTcuMCAxMDAgMTAwKSIvPgogICAgPGVsbGlwc2UgY3g9IjEwMCIgY3k9IjgwIiByeD0iMTYiIHJ5PSIzMyIgZmlsbD0idXJsKCNsb2JlQnJpZ2h0KSIgc3Ryb2tlPSIjM2QwYzEyIiBzdHJva2Utd2lkdGg9IjAuNzUiIG9wYWNpdHk9IjAuOTciIHRyYW5zZm9ybT0icm90YXRlKDMwOC40IDEwMCAxMDApIi8+CiAgPC9nPgoKICA8Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9IjEzIiBmaWxsPSJ1cmwoI2hvbGVTaGFkb3cpIi8+CiAgPGNpcmNsZSBjeD0iMTAwIiBjeT0iMTAwIiByPSI5IiBmaWxsPSJ1cmwoI2hvbGUpIi8+CiAgPGNpcmNsZSBjeD0iMTAwIiBjeT0iMTAwIiByPSI5IiBmaWxsPSJub25lIiBzdHJva2U9IiNhMzc5MmEiIHN0cm9rZS13aWR0aD0iMC44IiBvcGFjaXR5PSIwLjU1Ii8+Cjwvc3ZnPgo=">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#faf6f0; --paper-raised:#ffffff; --paper-sunken:#f2e9dd;
+    --ink:#21100d; --ink-soft:#6b524c; --ink-faint:#9c857f;
+    --garnet:#7a1b28; --garnet-bright:#a1263a; --garnet-deep:#4a0e15;
+    --gold:#93712f; --gold-bright:#a3792a; --gold-line:#e4d5b8; --gold-tint:#f4ecd8;
+    --border:#ecdfd0; --good:#3f6b2f; --good-tint:#e9f0e2;
+    --shadow: 0 1px 2px rgba(74,14,21,.04), 0 8px 24px -8px rgba(74,14,21,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#160e0b; --paper-raised:#211512; --paper-sunken:#0f0a08;
+      --ink:#f3e6dd; --ink-soft:#c2a99e; --ink-faint:#8a6f64;
+      --garnet:#e8929c; --garnet-bright:#f0aab2; --garnet-deep:#ffc4ca;
+      --gold:#d4af6a; --gold-bright:#e2c078; --gold-line:#453626; --gold-tint:#2a2015;
+      --border:#3a2c22; --good:#8fc27a; --good-tint:#1f2c18;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -8px rgba(0,0,0,.5);
+    }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{animation-duration:.001ms !important; transition-duration:.001ms !important} }
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',-apple-system,sans-serif;line-height:1.65;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:'Fraunces',Georgia,serif;color:var(--ink);text-wrap:balance;margin:0}
+  h1{font-weight:600} h2{font-weight:600} h3{font-weight:600}
+  p{margin:0}
+  a{color:var(--garnet-bright)}
+  code,.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 32px}
+  section{padding:96px 0}
+  @media (max-width:720px){ section{padding:64px 0} .wrap{padding:0 20px} }
+
+  nav.top{position:sticky;top:0;z-index:50;background:color-mix(in srgb, var(--paper) 88%, transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  nav.top .wrap{display:flex;align-items:center;gap:28px;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:'Fraunces',serif;font-weight:600;font-size:20px;color:var(--ink);text-decoration:none;margin-right:auto}
+  .brand svg{width:28px;height:28px}
+  nav.top a.navlink{font-size:14px;color:var(--ink-soft);text-decoration:none;font-weight:500}
+  nav.top a.navlink:hover{color:var(--garnet)}
+  nav.top .navlinks{display:flex;gap:24px}
+  @media (max-width:820px){ nav.top .navlinks{display:none} }
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;border:1px solid transparent;cursor:pointer;white-space:nowrap}
+  .btn-primary{background:var(--garnet);color:#fff9f5}
+  .btn-primary:hover{background:var(--garnet-bright)}
+  .btn-ghost{border-color:var(--border);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--gold)}
+
+  .hero{padding:88px 0 80px;position:relative;overflow:hidden}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+  @media (max-width:900px){ .hero-grid{grid-template-columns:1fr} }
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-bright);background:var(--gold-tint);border:1px solid var(--gold-line);padding:5px 12px;border-radius:20px;margin-bottom:22px}
+  .hero h1{font-size:clamp(42px,6vw,68px);line-height:.98;letter-spacing:-.01em}
+  .hero .tagline{font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:clamp(18px,2vw,22px);color:var(--garnet);margin-top:14px}
+  .hero p.lede{font-size:17px;color:var(--ink-soft);max-width:52ch;margin-top:20px}
+  .hero .ctas{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px;align-items:center}
+  .install-chip{display:flex;align-items:center;gap:10px;background:var(--paper-sunken);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:14px}
+  .install-chip .prompt{color:var(--gold-bright)}
+  .badgerow{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+  .badgerow img{height:20px;display:block}
+
+  .codepanel{background:var(--paper-raised);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+  .codepanel .bar{display:flex;gap:6px;padding:12px 16px;border-bottom:1px solid var(--border)}
+  .codepanel .dot{width:9px;height:9px;border-radius:50%;background:var(--border)}
+  .codepanel pre{margin:0;padding:22px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.75;overflow-x:auto}
+  .tok-kw{color:var(--garnet)} .tok-str{color:var(--good)} .tok-com{color:var(--ink-faint)} .tok-fn{color:var(--gold-bright)} .tok-num{color:#4a7ab5}
+
+  .kicker{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-bright);margin-bottom:10px}
+  .section-head{max-width:640px;margin-bottom:56px}
+  .section-head h2{font-size:clamp(30px,4vw,40px)}
+  .section-head p{color:var(--ink-soft);margin-top:14px;font-size:16px}
+
+  section.alt{background:var(--paper-sunken)}
+
+  .diagram-card{background:var(--paper-raised);border:1px solid var(--border);border-radius:16px;padding:40px;box-shadow:var(--shadow)}
+  .diagram-card svg{width:100%;height:auto;display:block}
+
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media (max-width:820px){ .grid3{grid-template-columns:1fr 1fr} .grid2{grid-template-columns:1fr} }
+  @media (max-width:560px){ .grid3{grid-template-columns:1fr} }
+  .card{background:var(--paper-raised);border:1px solid var(--border);border-radius:12px;padding:24px;box-shadow:var(--shadow)}
+  .card h3{font-size:16px;margin-bottom:4px}
+  .card .count{font-family:'Fraunces',serif;font-size:34px;font-weight:600;color:var(--garnet)}
+  .card p{color:var(--ink-soft);font-size:14px;margin-top:8px}
+  .card .metric-list{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px}
+  .tag{font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:var(--gold-tint);border:1px solid var(--gold-line);color:var(--ink-soft);padding:3px 8px;border-radius:5px}
+  .card.usp{border-color:var(--gold);position:relative}
+  .usp-badge{position:absolute;top:-10px;right:18px;background:var(--garnet);color:#fff9f5;font-size:10.5px;font-weight:700;letter-spacing:.05em;padding:4px 10px;border-radius:20px}
+
+  .repo-card{background:var(--paper-raised);border:1px solid var(--border);border-radius:16px;padding:32px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:16px}
+  .pill-link{font-size:12.5px;font-weight:600;color:var(--ink);background:var(--paper-sunken);border:1px solid var(--border);border-radius:20px;padding:6px 12px;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .pill-link:hover{border-color:var(--gold)}
+
+  .dash-mock{border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);background:#fff}
+  .dash-mock .dhead{background:#c0242f;padding:12px 18px;display:flex;align-items:center;gap:12px}
+  .dash-mock .dlogo{width:22px;height:22px}
+  .dash-mock .dtitle{color:#fff;font-weight:700;font-size:15px;font-family:'IBM Plex Sans',sans-serif}
+  .dash-mock .dsub{color:#f3b8bc;font-size:11px}
+  .dash-mock .dpill{margin-left:auto;background:rgba(255,255,255,.18);color:#fff;font-size:10.5px;padding:3px 10px;border-radius:20px}
+  .dash-mock .dbody{display:grid;grid-template-columns:180px 1fr}
+  .dash-mock .dside{border-right:1px solid #eee;background:#fff}
+  .dash-mock .ditem{padding:10px 14px;border-bottom:1px solid #f5f5f5;font-size:11px}
+  .dash-mock .ditem.sel{background:#fdeceb;border-left:2px solid #c0242f}
+  .dash-mock .ditem .a{font-weight:700;color:#1a1a1a;font-size:11.5px}
+  .dash-mock .ditem .t{color:#888;font-size:10px}
+  .dash-mock .dmain{padding:18px;background:#fafafa}
+  .dash-mock .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+  .dash-mock .stat{background:#fff;border:1px solid #eee;border-radius:8px;padding:10px;text-align:center}
+  .dash-mock .stat b{display:block;font-family:'Fraunces',serif;color:#c0242f;font-size:19px}
+  .dash-mock .stat span{font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.04em}
+  .dash-mock table{width:100%;border-collapse:collapse;font-size:10.5px;background:#fff;border:1px solid #eee;border-radius:8px;overflow:hidden}
+  .dash-mock td,.dash-mock th{padding:6px 10px;text-align:left}
+  .dash-mock th{color:#999;font-size:9px;text-transform:uppercase;border-bottom:1px solid #eee}
+  .dash-mock td{border-bottom:1px solid #f5f5f5;color:#333}
+  .pass{color:#2e7d32;font-weight:700}.fail{color:#c0242f;font-weight:700}
+
+  table.api{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.api th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);padding:10px 14px;border-bottom:1px solid var(--border)}
+  table.api td{padding:10px 14px;border-bottom:1px solid var(--border)}
+  .method{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px}
+  .m-get{background:var(--good-tint);color:var(--good)}
+  .m-post{background:var(--gold-tint);color:var(--gold-bright)}
+  .m-del{background:#fde8e8;color:var(--garnet)}
+  .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--paper-raised)}
+  table.api td:first-child, table.api th:first-child{padding-left:18px}
+
+  .caveat{background:var(--gold-tint);border-left:3px solid var(--gold);border-radius:0 10px 10px 0;padding:14px 18px;font-size:14px;color:var(--ink-soft);margin-bottom:28px}
+  table.compare{width:100%;border-collapse:collapse;font-size:14px;background:var(--paper-raised)}
+  table.compare th,table.compare td{padding:12px 16px;text-align:center;border-bottom:1px solid var(--border)}
+  table.compare th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint)}
+  table.compare td:first-child,table.compare th:first-child{text-align:left}
+  table.compare th:nth-child(2),table.compare td:nth-child(2){color:var(--garnet);font-weight:700}
+  .yes{color:var(--good);font-weight:700} .no{color:var(--ink-faint)}
+
+  .author-card{display:flex;gap:28px;align-items:center;background:var(--paper-raised);border:1px solid var(--border);border-radius:16px;padding:32px;box-shadow:var(--shadow)}
+  .author-card img.avatar{width:96px;height:96px;border-radius:50%;flex-shrink:0;border:2px solid var(--gold-line)}
+  .author-card h3{font-size:22px}
+  .author-card .role{color:var(--gold-bright);font-size:13px;font-weight:600;margin:4px 0 10px}
+  .author-card p{color:var(--ink-soft);font-size:14.5px;max-width:60ch}
+  .author-card .links{display:flex;gap:10px;margin-top:14px}
+  @media (max-width:600px){ .author-card{flex-direction:column;text-align:center} .author-card .links{justify-content:center} }
+
+  footer{border-top:1px solid var(--border);padding:56px 0 40px}
+  footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:32px}
+  footer .col h4{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);margin-bottom:12px}
+  footer .col a{display:block;font-size:14px;color:var(--ink-soft);text-decoration:none;margin-bottom:8px}
+  footer .col a:hover{color:var(--garnet)}
+  footer .bottom{margin-top:40px;padding-top:24px;border-top:1px solid var(--border);font-size:13px;color:var(--ink-faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+
+  .fade-up{animation:fadeUp .7s ease both}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+<defs>
+  <radialGradient id="lobeBright" cx="38%" cy="22%" r="85%"><stop offset="0%" stop-color="#eab68f"/><stop offset="38%" stop-color="#c2465a"/><stop offset="75%" stop-color="#7a1b28"/><stop offset="100%" stop-color="#3d0c12"/></radialGradient>
+  <radialGradient id="lobeMed" cx="38%" cy="22%" r="85%"><stop offset="0%" stop-color="#c98a76"/><stop offset="38%" stop-color="#a1263a"/><stop offset="75%" stop-color="#63131e"/><stop offset="100%" stop-color="#2e090d"/></radialGradient>
+  <radialGradient id="lobeDark" cx="38%" cy="22%" r="85%"><stop offset="0%" stop-color="#a05f5f"/><stop offset="38%" stop-color="#7a1b28"/><stop offset="75%" stop-color="#4a0e15"/><stop offset="100%" stop-color="#1f0609"/></radialGradient>
+  <radialGradient id="hole" cx="50%" cy="30%" r="80%"><stop offset="0%" stop-color="#3a1015"/><stop offset="70%" stop-color="#150406"/><stop offset="100%" stop-color="#050101"/></radialGradient>
+</defs>
+</svg>
+
+<nav class="top">
+  <div class="wrap">
+    <a href="#top" class="brand">
+      <svg viewBox="0 0 200 200"><ellipse cx="100" cy="100" rx="95" ry="37" transform="rotate(-12 100 100)" fill="none" stroke="#a3792a" stroke-width="3" opacity="0.5"/><ellipse cx="100" cy="100" rx="95" ry="37" transform="rotate(55 100 100)" fill="none" stroke="#a3792a" stroke-width="2.6" opacity="0.35"/><g stroke-linejoin="round"><ellipse cx="100" cy="80" rx="16" ry="33" fill="url(#lobeMed)" stroke="#2e090d" stroke-width="1" transform="rotate(0 100 100)"/><ellipse cx="100" cy="80" rx="16" ry="33" fill="url(#lobeDark)" stroke="#1f0609" stroke-width="1" transform="rotate(51.4 100 100)"/><ellipse cx="100" cy="80" rx="16" ry="33" fill="url(#lobeDark)" stroke="#1f0609" stroke-width="1" transform="rotate(102.8 100 100)"/><ellipse cx="100" cy="80" rx="16" ry="33" fill="url(#lobeDark)" stroke="#1f0609" stroke-width="1" transform="rotate(154.2 100 100)"/><ellipse cx="100" cy="80" rx="16" ry="33" fill="url(#lobeMed)" stroke="#2e090d" stroke-width="1" transform="rotate(205.6 100 100)"/><ellipse cx="100" cy="80" rx="16" ry="33" fill="url(#lobeBright)" stroke="#3d0c12" stroke-width="1" transform="rotate(257.0 100 100)"/><ellipse cx="100" cy="80" rx="16" ry="33" fill="url(#lobeBright)" stroke="#3d0c12" stroke-width="1" transform="rotate(308.4 100 100)"/></g><circle cx="100" cy="100" r="9" fill="url(#hole)"/></svg>
+      Rubra
+    </a>
+    <div class="navlinks">
+      <a class="navlink" href="#architecture">How it works</a>
+      <a class="navlink" href="#sdk">SDK</a>
+      <a class="navlink" href="#server">Server</a>
+      <a class="navlink" href="#deploy">Deploy</a>
+      <a class="navlink" href="#compare">Compare</a>
+      <a class="navlink" href="#author">Author</a>
+    </div>
+    <a class="btn btn-ghost" href="https://github.com/pm1715/rubra-sdk" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div class="fade-up">
+      <span class="eyebrow">v0.1.1 · Apache 2.0 · Open source</span>
+      <h1>Rubra</h1>
+      <p class="tagline">Every aspect, nothing missed.</p>
+      <p class="lede">A trace-first agent evaluation framework. Decorate your agent once — Rubra captures every tool call, LLM call, token, and cost automatically, then scores it across 36 metrics, including 11 tool-orchestration metrics not commonly found elsewhere.</p>
+      <div class="ctas">
+        <div class="install-chip"><span class="prompt">$</span> pip install rubra</div>
+        <a class="btn btn-primary" href="#sdk">Get started</a>
+      </div>
+      <div class="badgerow">
+        <img src="https://img.shields.io/pypi/v/rubra.svg" alt="PyPI version">
+        <img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License">
+        <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python 3.11+">
+      </div>
+    </div>
+    <div class="codepanel fade-up" style="animation-delay:.1s">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <pre><span class="tok-kw">import</span> rubra
+
+<span class="tok-com"># one decorator — that's the entire integration</span>
+<span class="tok-kw">@rubra.agent</span>(task=<span class="tok-str">"Answer questions using web search"</span>)
+<span class="tok-kw">def</span> <span class="tok-fn">my_agent</span>(question: <span class="tok-fn">str</span>) -> <span class="tok-fn">str</span>:
+    context = search_web(question)
+    <span class="tok-kw">return</span> call_llm(context, question)
+
+my_agent(<span class="tok-str">"What is the capital of France?"</span>)
+
+report = rubra.evaluate(rubra.get_last_trace())
+<span class="tok-fn">print</span>(<span class="tok-str">f"Rubra Score: {report.rubra_score:.3f}"</span>)
+<span class="tok-com"># Rubra Score: 0.923</span></pre>
+    </div>
+  </div>
+</header>
+
+<section id="architecture">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Architecture</div>
+      <h2>How it works</h2>
+      <p>Python <code>contextvars.ContextVar</code> propagates the active trace — async-safe and thread-safe by construction, no globals, no locks. Every <code>@rubra.agent</code> call gets its own isolated trace, so concurrent agents never cross-contaminate.</p>
+    </div>
+    <div class="diagram-card">
+      <svg viewBox="0 0 1040 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Flow diagram: agent decorator captures a trace of tool and LLM calls, which evaluate turns into a report">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M1 1L8 5L1 9" fill="none" stroke="var(--gold)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <g font-family="IBM Plex Mono, monospace">
+          <rect x="10" y="70" width="190" height="80" rx="10" fill="var(--gold-tint)" stroke="var(--gold-line)"/>
+          <text x="105" y="105" text-anchor="middle" font-size="14" font-weight="600" fill="var(--ink)">@rubra.agent</text>
+          <text x="105" y="126" text-anchor="middle" font-size="11" fill="var(--ink-soft)">wraps your function</text>
+
+          <line x1="200" y1="110" x2="258" y2="110" stroke="var(--gold)" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+          <rect x="260" y="30" width="290" height="160" rx="10" fill="var(--paper-raised)" stroke="var(--garnet)" stroke-width="1.4"/>
+          <text x="405" y="56" text-anchor="middle" font-size="13" font-weight="700" fill="var(--garnet)">Trace (ContextVar)</text>
+          <rect x="280" y="70" width="250" height="42" rx="7" fill="var(--gold-tint)" stroke="var(--gold-line)"/>
+          <text x="405" y="95" text-anchor="middle" font-size="11.5" fill="var(--ink)">@rubra.tool → TOOL_CALL / RESPONSE</text>
+          <rect x="280" y="122" width="250" height="42" rx="7" fill="var(--gold-tint)" stroke="var(--gold-line)"/>
+          <text x="405" y="147" text-anchor="middle" font-size="11.5" fill="var(--ink)">rubra.patch → LLM_CALL spans</text>
+
+          <line x1="551" y1="110" x2="609" y2="110" stroke="var(--gold)" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+          <rect x="611" y="70" width="180" height="80" rx="10" fill="var(--gold-tint)" stroke="var(--gold-line)"/>
+          <text x="701" y="105" text-anchor="middle" font-size="14" font-weight="600" fill="var(--ink)">evaluate()</text>
+          <text x="701" y="126" text-anchor="middle" font-size="11" fill="var(--ink-soft)">36 metrics run</text>
+
+          <line x1="792" y1="110" x2="850" y2="110" stroke="var(--gold)" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+          <rect x="852" y="60" width="178" height="100" rx="10" fill="var(--paper-raised)" stroke="var(--garnet)" stroke-width="1.4"/>
+          <text x="941" y="90" text-anchor="middle" font-size="14" font-weight="700" fill="var(--garnet)">EvalReport</text>
+          <text x="941" y="112" text-anchor="middle" font-size="11" fill="var(--ink-soft)">36 metrics +</text>
+          <text x="941" y="128" text-anchor="middle" font-size="11" fill="var(--ink-soft)">3 composite scores</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="sdk">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">rubra-sdk</div>
+      <h2>The core library</h2>
+      <p>Zero-config by default — SQLite auto-inits at <code>.rubra/rubra.db</code>. Four core dependencies, no LLM required unless you opt into goal metrics.</p>
+    </div>
+
+    <div class="grid3">
+      <div class="card"><h3>Execution</h3><div class="count">13</div><p>Deterministic, zero LLM cost.</p><div class="metric-list"><span class="tag">task_completion_rate</span><span class="tag">cost_efficiency</span><span class="tag">retry_rate</span></div></div>
+      <div class="card usp"><span class="usp-badge">Signature metrics</span><h3>Tool Orchestration</h3><div class="count">11</div><p>Precision/recall/F1 on tool selection, call-order scoring, redundant-call detection.</p><div class="metric-list"><span class="tag">tool_selection_f1</span><span class="tag">tool_call_order_score</span><span class="tag">tool_chain_validity</span></div></div>
+      <div class="card"><h3>Safety</h3><div class="count">3</div><p>Prompt injection, scope creep, PII propagation.</p><div class="metric-list"><span class="tag">prompt_injection_resistance</span><span class="tag">pii_propagation_count</span></div></div>
+      <div class="card"><h3>Quality</h3><div class="count">4</div><p>Answer relevance, coherence, format, groundedness.</p><div class="metric-list"><span class="tag">response_groundedness</span><span class="tag">output_coherence_score</span></div></div>
+      <div class="card"><h3>Goal (LLM-judge)</h3><div class="count">5</div><p>Reference-free, via <code>rubra[judge]</code>. Any litellm model, including free local Ollama.</p><div class="metric-list"><span class="tag">goal_completion</span><span class="tag">hallucination_score</span></div></div>
+      <div class="card"><h3>Composite</h3><div class="count">3</div><p>Weighted roll-ups computed automatically.</p><div class="metric-list"><span class="tag">rubra_score</span><span class="tag">tool_intelligence_score</span><span class="tag">agentic_efficiency_score</span></div></div>
+    </div>
+
+    <div style="margin-top:48px" class="section-head">
+      <div class="kicker">Integrations</div>
+      <h2 style="font-size:24px">Instrument what you already use</h2>
+    </div>
+    <div class="grid3" style="grid-template-columns:repeat(6,1fr)">
+      <div class="card" style="padding:16px;text-align:center"><h3 style="font-size:13px">OpenAI</h3></div>
+      <div class="card" style="padding:16px;text-align:center"><h3 style="font-size:13px">Anthropic</h3></div>
+      <div class="card" style="padding:16px;text-align:center"><h3 style="font-size:13px">LangChain</h3></div>
+      <div class="card" style="padding:16px;text-align:center"><h3 style="font-size:13px">LangGraph</h3></div>
+      <div class="card" style="padding:16px;text-align:center"><h3 style="font-size:13px">OpenTelemetry</h3></div>
+      <div class="card" style="padding:16px;text-align:center"><h3 style="font-size:13px">pytest</h3></div>
+    </div>
+    <div style="margin-top:28px;display:flex;gap:10px;flex-wrap:wrap">
+      <a class="pill-link" href="https://pypi.org/project/rubra/" target="_blank" rel="noopener">↗ PyPI package</a>
+      <a class="pill-link" href="https://github.com/pm1715/rubra-sdk" target="_blank" rel="noopener">↗ Source on GitHub</a>
+      <a class="pill-link" href="https://github.com/pm1715/rubra-sdk/blob/main/CHANGELOG.md" target="_blank" rel="noopener">↗ Changelog</a>
+    </div>
+  </div>
+</section>
+
+<section id="server">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">rubra-server</div>
+      <h2>REST API + live dashboard</h2>
+      <p>Self-host a backend for your traces: browse them, run evaluations, and generate HTML reports from a browser — no notebook required.</p>
+    </div>
+
+    <div class="grid2" style="align-items:start">
+      <div class="dash-mock">
+        <div class="dhead">
+          <svg class="dlogo" viewBox="0 0 200 200"><ellipse cx="100" cy="100" rx="95" ry="37" transform="rotate(-12 100 100)" fill="none" stroke="#fff" stroke-width="3" opacity="0.6"/><g fill="#fff" opacity="0.9"><ellipse cx="100" cy="80" rx="16" ry="33" transform="rotate(0 100 100)"/><ellipse cx="100" cy="80" rx="16" ry="33" opacity="0.7" transform="rotate(102.8 100 100)"/><ellipse cx="100" cy="80" rx="16" ry="33" transform="rotate(257 100 100)"/></g><circle cx="100" cy="100" r="9" fill="#7a1b28" opacity="0.6"/></svg>
+          <span class="dtitle">Rubra</span><span class="dsub">Agentic Eval Dashboard</span>
+          <span class="dpill">1 trace</span>
+        </div>
+        <div class="dbody">
+          <div class="dside">
+            <div class="ditem sel"><div class="a">weather_agent ✓</div><div class="t">Report Tokyo weather</div></div>
+          </div>
+          <div class="dmain">
+            <div class="row3">
+              <div class="stat"><b>0.732</b><span>Rubra score</span></div>
+              <div class="stat"><b>0.818</b><span>Tool intel.</span></div>
+              <div class="stat"><b>0.600</b><span>Agentic eff.</span></div>
+            </div>
+            <table>
+              <tr><th>Metric</th><th>Score</th><th>Result</th></tr>
+              <tr><td>task_completion_rate</td><td>1.000</td><td class="pass">PASS</td></tr>
+              <tr><td>tool_call_success_rate</td><td>1.000</td><td class="pass">PASS</td></tr>
+              <tr><td>latency_score</td><td>0.000</td><td class="fail">FAIL</td></tr>
+              <tr><td>cost_efficiency</td><td>1.000</td><td class="pass">PASS</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="install-chip" style="margin-bottom:14px"><span class="prompt">$</span> docker run -p 8000:8000 ghcr.io/pm1715/rubra-server</div>
+        <p style="color:var(--ink-soft);font-size:14.5px;margin-bottom:20px">Or <code>pip install rubra-server</code>. Either way, the dashboard polls <code>/api/v1/traces</code> every 30s — traces produced anywhere pointed at the same database show up automatically.</p>
+        <div class="table-wrap">
+          <table class="api">
+            <tr><th>Method</th><th>Path</th></tr>
+            <tr><td><span class="method m-get">GET</span></td><td><code>/api/v1/traces</code></td></tr>
+            <tr><td><span class="method m-post">POST</span></td><td><code>/api/v1/eval</code></td></tr>
+            <tr><td><span class="method m-get">GET</span></td><td><code>/api/v1/report/{trace_id}</code></td></tr>
+            <tr><td><span class="method m-del">DEL</span></td><td><code>/api/v1/traces/{trace_id}</code></td></tr>
+          </table>
+        </div>
+        <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
+          <a class="pill-link" href="https://pypi.org/project/rubra-server/" target="_blank" rel="noopener">↗ PyPI package</a>
+          <a class="pill-link" href="https://github.com/pm1715/rubra-server/pkgs/container/rubra-server" target="_blank" rel="noopener">↗ Docker image (GHCR)</a>
+          <a class="pill-link" href="https://github.com/pm1715/rubra-server" target="_blank" rel="noopener">↗ Source on GitHub</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="deploy">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">rubra-deploy</div>
+      <h2>Kubernetes, via Helm</h2>
+      <p>A production-shaped chart: <code>ClusterIP</code> service, persistent volume for SQLite, liveness/readiness probes against <code>/api/v1/health</code>, and an optional Ingress.</p>
+    </div>
+    <div class="grid2">
+      <div class="codepanel">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <pre><span class="tok-com"># from the OCI registry — no chart repo needed</span>
+helm install rubra oci://ghcr.io/pm1715/charts/rubra \
+  --version 0.1.0
+
+<span class="tok-com"># with a real judge-model API key + Postgres:</span>
+helm upgrade rubra oci://ghcr.io/pm1715/charts/rubra \
+  --set secrets.apiKeySecretName=rubra-api-key \
+  --set env.RUBRA_DATABASE_URL=<span class="tok-str">"postgresql://..."</span></pre>
+      </div>
+      <div>
+        <p style="color:var(--ink-soft);font-size:14.5px">Also ships <code>scripts/test-in-kind.sh</code> — builds the real Dockerfile, loads it into a throwaway <a href="https://kind.sigs.k8s.io/" target="_blank" rel="noopener">kind</a> cluster, and does a genuine end-to-end deploy test with no cloud cluster or registry required.</p>
+        <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
+          <a class="pill-link" href="https://github.com/pm1715/rubra-deploy/pkgs/container/charts%2Frubra" target="_blank" rel="noopener">↗ Helm chart (GHCR OCI)</a>
+          <a class="pill-link" href="https://github.com/pm1715/rubra-deploy" target="_blank" rel="noopener">↗ Source on GitHub</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Positioning</div>
+      <h2>How Rubra compares</h2>
+    </div>
+    <div class="caveat">Rubra is early (v0.1.x) and hasn't been battle-tested at the scale TruLens or RAGAS have. This table reflects what each project's public docs and source describe as of this writing, not independent benchmarking — treat it as a starting point for your own evaluation, not a verdict.</div>
+    <div class="table-wrap">
+      <table class="compare">
+        <tr><th>Feature</th><th>Rubra</th><th>TruLens</th><th>RAGAS</th><th>DeepEval</th></tr>
+        <tr><td>1-line agent instrumentation</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Tool orchestration metrics (11 unique)</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td>Partial</td></tr>
+        <tr><td>OpenAI + Anthropic auto-trace</td><td class="yes">Yes</td><td>Manual</td><td>Manual</td><td>Manual</td></tr>
+        <tr><td>Reference-free goal evaluation</td><td class="yes">Yes</td><td class="no">No</td><td>Partial</td><td>Partial</td></tr>
+        <tr><td>LangGraph + LangChain integration</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td><td>Partial</td></tr>
+        <tr><td>Safety metrics (injection, PII, scope)</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes</td></tr>
+        <tr><td>Self-hosted REST API + Dashboard</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td><td class="yes">Yes</td></tr>
+        <tr><td>Zero config (SQLite default)</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td>Partial</td></tr>
+      </table>
+    </div>
+    <p style="margin-top:24px;color:var(--ink-soft);font-size:15px;max-width:76ch">Where Rubra is most confidently different is the <strong style="color:var(--ink)">11 tool-orchestration metrics</strong> — precision/recall/F1 on tool selection, call-order scoring, redundant-call detection — which the others don't expose as first-class metrics today. Most of the rest of the table is closer to <em>different design choices</em> than <em>better or worse</em>: TruLens and DeepEval in particular have mature ecosystems and production track records Rubra doesn't have yet.</p>
+  </div>
+</section>
+
+<section class="alt" id="author">
+  <div class="wrap" style="max-width:760px">
+    <div class="section-head">
+      <div class="kicker">Author</div>
+      <h2>Built by one person, in the open</h2>
+    </div>
+    <div class="author-card">
+      <img class="avatar" src="https://github.com/pm1715.png" alt="Prayansh Mishra">
+      <div>
+        <h3>Prayansh Mishra</h3>
+        <div class="role">Creator &amp; maintainer of Rubra</div>
+        <p>Designed and built end to end — tracer, metrics, server, dashboard, Helm chart, and this page — after hands-on experience evaluating LLM agents surfaced real gaps in existing tools.</p>
+        <div class="links">
+          <a class="pill-link" href="https://github.com/pm1715" target="_blank" rel="noopener">↗ GitHub</a>
+          <a class="pill-link" href="https://www.linkedin.com/in/prayansh-mishra-02a57724b/" target="_blank" rel="noopener">↗ LinkedIn</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="col">
+      <h4>Rubra</h4>
+      <a href="https://github.com/pm1715/rubra-sdk" target="_blank" rel="noopener">rubra-sdk</a>
+      <a href="https://github.com/pm1715/rubra-server" target="_blank" rel="noopener">rubra-server</a>
+      <a href="https://github.com/pm1715/rubra-deploy" target="_blank" rel="noopener">rubra-deploy</a>
+    </div>
+    <div class="col">
+      <h4>Install</h4>
+      <a href="https://pypi.org/project/rubra/" target="_blank" rel="noopener">pip install rubra</a>
+      <a href="https://pypi.org/project/rubra-server/" target="_blank" rel="noopener">pip install rubra-server</a>
+      <a href="https://github.com/pm1715/rubra-deploy/pkgs/container/charts%2Frubra" target="_blank" rel="noopener">helm install rubra</a>
+    </div>
+    <div class="col">
+      <h4>Project</h4>
+      <a href="https://github.com/pm1715/rubra-sdk/blob/main/LICENSE" target="_blank" rel="noopener">License (Apache 2.0)</a>
+      <a href="https://github.com/pm1715/rubra-sdk/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Contributing</a>
+      <a href="https://github.com/pm1715/rubra-sdk/blob/main/SECURITY.md" target="_blank" rel="noopener">Security policy</a>
+    </div>
+  </div>
+  <div class="wrap bottom">
+    <span>© 2026 Prayansh Mishra. Apache 2.0 licensed.</span>
+    <span>Rubra — every aspect, nothing missed.</span>
+  </div>
+</footer>
+
+</body>
+</html>
