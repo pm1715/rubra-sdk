@@ -47,6 +47,7 @@ print(f"Passed:      {report.passed}/{report.total_metrics}")
 ```bash
 pip install rubra                    # core (4 deps, no LLM required)
 pip install "rubra[judge]"           # + LLM-judge metrics via litellm
+pip install "rubra[openai]"          # + OpenAI SDK interceptor
 pip install "rubra[anthropic]"       # + Anthropic Claude interceptor
 pip install "rubra[langgraph]"       # + LangGraph node tracing
 pip install "rubra[langchain]"       # + LangChain callback handler
