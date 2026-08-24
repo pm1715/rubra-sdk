@@ -9,7 +9,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![CI](https://github.com/pm1715/rubra-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/pm1715/rubra-sdk/actions)
 
-Rubra is a **trace-first** agent evaluation framework. Decorate your agent — Rubra automatically captures every tool call, LLM call, token, and cost. Then evaluate with 36 metrics including 11 tool-orchestration metrics no other framework provides.
+Rubra is a **trace-first** agent evaluation framework. Decorate your agent — Rubra automatically captures every tool call, LLM call, token, and cost. Then evaluate with 36 metrics, including 11 tool-orchestration metrics not commonly found elsewhere.
 
 ```python
 import rubra
@@ -28,7 +28,9 @@ print(f"Passed:      {report.passed}/{report.total_metrics}")
 
 ---
 
-## Why Rubra
+## How Rubra compares
+
+Rubra is early (v0.1.x) and hasn't been battle-tested at the scale TruLens or RAGAS have — the table below reflects what each project's public docs and source describe as of this writing, not independent benchmarking. Treat it as a starting point for your own evaluation, not a verdict.
 
 | Feature | **Rubra** | TruLens | RAGAS | DeepEval |
 |---------|:---------:|:-------:|:-----:|:--------:|
@@ -42,6 +44,8 @@ print(f"Passed:      {report.passed}/{report.total_metrics}")
 | Self-hosted REST API + Dashboard | ✅ | ✅ | ❌ | ✅ |
 | Pytest plugin | ✅ | ❌ | ❌ | ✅ |
 | Zero config (SQLite default) | ✅ | ❌ | ❌ | Partial |
+
+Where Rubra is most confidently different is the **11 tool-orchestration metrics** — precision/recall/F1 on tool selection, call-order scoring, redundant-call detection — which the others don't expose as first-class metrics today. Most of the rest of the table is closer to "different design choices" than "better or worse": TruLens and DeepEval in particular have mature ecosystems and production track records Rubra doesn't have yet.
 
 ---
 
@@ -265,6 +269,10 @@ evaluate(trace) ──► EvalReport (36 metrics + 3 composite scores)
 ```
 
 ---
+
+## Author
+
+Rubra was designed and built by **Prayansh Mishra** ([@pm1715](https://github.com/pm1715) · [LinkedIn](https://www.linkedin.com/in/prayansh-mishra-02a57724b/)).
 
 ## License
 
