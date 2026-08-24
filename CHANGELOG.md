@@ -6,6 +6,9 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `evaluate(..., judge_model=...)` — goal metrics now accept any litellm-compatible model string (was hardcoded to `gpt-4o-mini`), enabling free local judge testing via Ollama (`judge_model="ollama/llama3.2"`).
+
 ## [0.1.0] — 2026-08-25
 
 ### Added

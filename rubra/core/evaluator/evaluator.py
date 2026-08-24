@@ -251,6 +251,9 @@ def evaluate(
     target_tokens: int = 4096,
     budget_usd: float = 0.10,
     min_output_length: int = 10,
+    # Goal metrics (LLM-judge) — any litellm-supported model string,
+    # e.g. "gpt-4o-mini", "ollama/llama3.2", "anthropic/claude-3-5-haiku-20241022"
+    judge_model: str = "gpt-4o-mini",
     # Storage
     persist: bool = True,
 ) -> EvalReport:
@@ -258,10 +261,14 @@ def evaluate(
     Run evaluation metrics against a completed trace.
 
     Args:
-        trace:      A Rubra Trace object (from @rubra.agent or built manually).
-        metrics:    "all", "execution", "tool", "safety", "quality", "goal",
-                    or a list of specific metric names.
-        persist:    If True, save MetricResult rows to storage.
+        trace:       A Rubra Trace object (from @rubra.agent or built manually).
+        metrics:     "all", "execution", "tool", "safety", "quality", "goal",
+                     or a list of specific metric names.
+        judge_model: Model passed to litellm for goal metrics (LLM-as-judge).
+                     Supports any litellm-compatible model, including local
+                     models via Ollama (e.g. "ollama/llama3.2") — no API key
+                     or cost required.
+        persist:     If True, save MetricResult rows to storage.
 
     Returns:
         EvalReport with all results and composite scores.
@@ -308,10 +315,11 @@ def evaluate(
     if "goal" in requested:
         try:
             from rubra.core.metrics.goal.metrics import run_goal_metrics
-            results.extend(run_goal_metrics(trace))
+            results.extend(run_goal_metrics(trace, model=judge_model))
         except Exception:
-            # Goal metrics require litellm + a valid API key.
-            # Swallow all failures so deterministic metrics still return.
+            # Goal metrics require litellm + a reachable model (API key or
+            # local server). Swallow all failures so deterministic metrics
+            # still return.
             pass
 
     # If specific metric names were listed, filter

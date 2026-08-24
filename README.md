@@ -211,6 +211,12 @@ def run(question: str) -> str:
 ### Goal / LLM-judge (5) — requires `rubra[judge]`
 `goal_completion` · `answer_correctness` · `reasoning_quality` · `task_understanding` · `hallucination_score`
 
+The judge model is configurable and works with any [litellm](https://docs.litellm.ai/docs/providers)-supported model — including free local models via Ollama, so you can exercise these metrics with zero API cost:
+
+```python
+report = rubra.evaluate(trace, metrics="all", judge_model="ollama/llama3.2")
+```
+
 ### Composite scores (automatic)
 - **`rubra_score`** — weighted average across all scored metrics
 - **`tool_intelligence_score`** — average of tool-category metrics
