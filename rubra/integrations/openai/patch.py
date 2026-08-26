@@ -13,10 +13,15 @@ Usage:
     # From here, all calls are traced:
     response = client.chat.completions.create(model="gpt-4o", messages=[...])
 """
+
 from __future__ import annotations
 
 import time
-from typing import Any
+from datetime import UTC
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from rubra.core.tracer.models import Span
 
 
 def patch(client: Any) -> Any:
@@ -34,11 +39,12 @@ def patch(client: Any) -> Any:
         completions = client.chat.completions
     except AttributeError:
         raise TypeError(
-            "rubra.patch() expects an OpenAI client with a .chat.completions attribute. "
-            f"Got: {type(client).__name__}"
+            "rubra.patch() expects an OpenAI client with a "
+            f".chat.completions attribute. Got: {type(client).__name__}"
         ) from None
 
     import inspect
+
     if inspect.iscoroutinefunction(getattr(completions, "create", None)):
         _patch_async(completions)
     else:
@@ -52,7 +58,6 @@ def _patch_sync(completions: Any) -> None:
 
     def patched_create(*args: Any, **kwargs: Any) -> Any:
         from rubra.core.tracer.context import get_active_trace
-        from rubra.core.tracer.models import LLMCallData, Span, SpanType
 
         trace = get_active_trace()
         t0 = time.perf_counter()
@@ -78,7 +83,6 @@ def _patch_async(completions: Any) -> None:
 
     async def patched_create(*args: Any, **kwargs: Any) -> Any:
         from rubra.core.tracer.context import get_active_trace
-        from rubra.core.tracer.models import Span, SpanType
 
         trace = get_active_trace()
         t0 = time.perf_counter()
@@ -104,8 +108,9 @@ def _build_llm_span(
     kwargs: dict[str, Any],
     response: Any,
     elapsed_ms: float,
-) -> "Span":
-    from datetime import datetime, timezone, timedelta
+) -> Span:
+    from datetime import datetime, timedelta
+
     from rubra.core.tracer.models import LLMCallData, Span, SpanStatus, SpanType
 
     model = kwargs.get("model", "unknown")
@@ -115,7 +120,9 @@ def _build_llm_span(
     usage = getattr(response, "usage", None)
     prompt_tokens = getattr(usage, "prompt_tokens", 0) or 0
     completion_tokens = getattr(usage, "completion_tokens", 0) or 0
-    total_tokens = getattr(usage, "total_tokens", 0) or (prompt_tokens + completion_tokens)
+    total_tokens = getattr(usage, "total_tokens", 0) or (
+        prompt_tokens + completion_tokens
+    )
 
     # Rough cost estimate (GPT-4o-mini pricing as fallback)
     cost_usd = _estimate_cost(model, prompt_tokens, completion_tokens)
@@ -129,7 +136,7 @@ def _build_llm_span(
         response_text = getattr(msg, "content", None) if msg else None
         finish_reason = getattr(choices[0], "finish_reason", None)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     span = Span(
         trace_id=trace_id,
         span_type=SpanType.LLM_CALL,
@@ -172,7 +179,9 @@ _COST_PER_1K = {
 def _estimate_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
     for prefix, (in_rate, out_rate) in _COST_PER_1K.items():
         if model.startswith(prefix):
-            return (prompt_tokens / 1000 * in_rate) + (completion_tokens / 1000 * out_rate)
+            return (prompt_tokens / 1000 * in_rate) + (
+                completion_tokens / 1000 * out_rate
+            )
     # Unknown model: use gpt-4o-mini rates as conservative fallback
     return (prompt_tokens / 1000 * 0.00015) + (completion_tokens / 1000 * 0.0006)
 

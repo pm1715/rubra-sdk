@@ -14,6 +14,7 @@ Usage:
 
 Requires: pip install 'rubra[otel]'
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -26,7 +27,8 @@ def _require_otel() -> None:
         from opentelemetry import trace  # noqa: F401
     except ImportError:
         raise ImportError(
-            "rubra[otel] requires opentelemetry-sdk and opentelemetry-exporter-otlp-proto-http.\n"
+            "rubra[otel] requires opentelemetry-sdk and "
+            "opentelemetry-exporter-otlp-proto-http.\n"
             "Install with: pip install 'rubra[otel]'"
         )
 

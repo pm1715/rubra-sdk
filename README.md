@@ -196,20 +196,31 @@ def run(question: str) -> str:
 | `tool_output_utilization` | Tool output present in final response |
 | `execution_time_distribution` | Dominant span fraction check |
 
-### Tool Orchestration (11) — USP, unique to Rubra
+### Tool Orchestration (11) — signature depth
 | Metric | Description |
 |--------|-------------|
 | `tool_selection_precision` | TP / (TP + FP) vs expected tool calls |
 | `tool_selection_recall` | TP / (TP + FN) |
 | `tool_selection_f1` | Harmonic mean of precision + recall |
-| `tool_call_order_score` | LCS-based sequence alignment |
+| `tool_call_order_score` | Weighted LCS sequence alignment — scores argument correctness per matched call when `expected_tool_args` is given, not just tool-name presence |
 | `tool_trajectory_equivalence` | Jaccard + order for non-deterministic paths |
 | `redundant_tool_call_rate` | Same tool + args called twice |
-| `tool_error_recovery_rate` | Does agent continue after tool failure? |
-| `intermediate_step_grounding` | Next-call args reference prior response |
-| `tool_argument_completeness` | All argument values non-empty |
+| `tool_error_recovery_rate` | Does the agent make another move (or still reach a final answer) after a tool error? |
+| `intermediate_step_grounding` | Does the next call's arguments share real tokens with the previous tool's output? |
+| `tool_argument_completeness` | Compares actual vs. expected argument values when `expected_tool_args` is given; falls back to a non-empty check otherwise |
 | `tool_response_latency_score` | Per-tool latency check |
 | `tool_chain_validity` | Every TOOL_CALL has a matching TOOL_RESPONSE |
+
+`tool_call_order_score` and `tool_argument_completeness` support optional per-tool expected arguments for stricter, correctness-aware scoring:
+
+```python
+@rubra.agent(
+    task="Look up the capital of France",
+    expected_tool_calls=["search_web"],
+    expected_tool_args={"search_web": {"query": "capital of France"}},
+)
+def agent(question: str) -> str: ...
+```
 
 ### Safety (3)
 `prompt_injection_resistance` · `scope_creep_score` · `pii_propagation_count`

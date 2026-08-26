@@ -3,13 +3,13 @@
 Pure math on span data — zero LLM calls, zero API cost, sub-millisecond.
 All functions accept a Trace and return a MetricResult.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
 
 from rubra.core.tracer.models import SpanStatus, SpanType, Trace
-
 
 # ---------------------------------------------------------------------------
 # MetricResult — shared output shape for all metrics
@@ -81,9 +81,7 @@ def tool_call_success_rate(trace: Trace) -> MetricResult:
             reason="No tool calls in trace.",
         )
 
-    errors = sum(
-        1 for s in trace.tool_call_spans if s.status == SpanStatus.ERROR
-    )
+    errors = sum(1 for s in trace.tool_call_spans if s.status == SpanStatus.ERROR)
     successes = total - errors
     score = successes / total
     return MetricResult(
@@ -176,7 +174,9 @@ def latency_score(trace: Trace, target_ms: float = 5000.0) -> MetricResult:
         metric_name="latency_score",
         score=score,
         passed=trace.duration_ms <= target_ms,
-        reason=f"Trace completed in {trace.duration_ms:.0f}ms (target: {target_ms:.0f}ms).",
+        reason=(
+            f"Trace completed in {trace.duration_ms:.0f}ms (target: {target_ms:.0f}ms)."
+        ),
         metadata={"duration_ms": trace.duration_ms, "target_ms": target_ms},
     )
 
@@ -196,7 +196,9 @@ def token_efficiency(trace: Trace, target_tokens: int = 4096) -> MetricResult:
         return MetricResult(
             metric_name="token_efficiency",
             score=None,
-            reason="No token usage recorded (LLM calls not instrumented or no LLM calls).",
+            reason=(
+                "No token usage recorded (LLM calls not instrumented or no LLM calls)."
+            ),
         )
 
     score = max(0.0, 1.0 - (total / target_tokens))
@@ -275,7 +277,8 @@ def tool_diversity(trace: Trace) -> MetricResult:
 
 def retry_rate(trace: Trace) -> MetricResult:
     """
-    Fraction of tool calls that were retried (same tool called immediately after an error).
+    Fraction of tool calls that were retried (same tool called immediately
+    after an error).
     Score: 1.0 = no retries (best). 0.0 = every call was a retry.
     """
     tool_spans = trace.tool_call_spans
@@ -306,7 +309,10 @@ def retry_rate(trace: Trace) -> MetricResult:
         reason=(
             "No tool retries detected."
             if retry_count == 0
-            else f"{retry_count} retry(ies) detected across {len(tool_spans)} tool calls."
+            else (
+                f"{retry_count} retry(ies) detected across "
+                f"{len(tool_spans)} tool calls."
+            )
         ),
         metadata={"retry_count": retry_count},
     )
@@ -396,9 +402,7 @@ def tool_output_utilization(trace: Trace) -> MetricResult:
     Requires tool_response_data.was_used_in_next_step to be set by the
     instrumentation layer (or falls back to substring matching in final output).
     """
-    response_spans = [
-        s for s in trace.spans if s.span_type == SpanType.TOOL_RESPONSE
-    ]
+    response_spans = [s for s in trace.spans if s.span_type == SpanType.TOOL_RESPONSE]
     if not response_spans:
         return MetricResult(
             metric_name="tool_output_utilization",
@@ -470,7 +474,8 @@ def execution_time_distribution(trace: Trace) -> MetricResult:
         score=score,
         passed=max_fraction <= 0.8,
         reason=(
-            f"Dominant span '{dominant_span}' took {max_fraction:.0%} of total trace time."
+            f"Dominant span '{dominant_span}' took {max_fraction:.0%} "
+            "of total trace time."
         ),
         metadata={"dominant_span": dominant_span, "dominant_fraction": max_fraction},
     )

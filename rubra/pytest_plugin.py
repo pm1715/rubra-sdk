@@ -21,6 +21,7 @@ Usage:
         my_agent("Who wrote Hamlet?")
         rubra_trace.assert_score(min_rubra_score=0.7, min_pass_rate=0.8)
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -102,7 +103,8 @@ class RubraTestRecorder:
             rate = report.passed / report.total_metrics
             if rate < min_pass_rate:
                 failures.append(
-                    f"pass_rate {rate:.3f} ({report.passed}/{report.total_metrics}) < min {min_pass_rate}"
+                    f"pass_rate {rate:.3f} "
+                    f"({report.passed}/{report.total_metrics}) < min {min_pass_rate}"
                 )
 
         if failures:

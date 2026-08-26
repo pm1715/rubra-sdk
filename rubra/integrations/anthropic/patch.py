@@ -16,6 +16,7 @@ Usage:
         )
         return response.content[0].text
 """
+
 from __future__ import annotations
 
 import inspect
@@ -27,15 +28,15 @@ from rubra.core.tracer.models import LLMCallData, Span, SpanType
 
 # Cost per 1K tokens: (input $/1K, output $/1K)
 _ANTHROPIC_COST: dict[str, tuple[float, float]] = {
-    "claude-opus-4":                  (0.015,  0.075),
-    "claude-sonnet-4-5":              (0.003,  0.015),
-    "claude-sonnet-4-5-20251001":     (0.003,  0.015),
-    "claude-3-5-sonnet-20241022":     (0.003,  0.015),
-    "claude-3-5-sonnet-20240620":     (0.003,  0.015),
-    "claude-3-5-haiku-20241022":      (0.0008, 0.004),
-    "claude-3-haiku-20240307":        (0.00025,0.00125),
-    "claude-3-opus-20240229":         (0.015,  0.075),
-    "claude-3-sonnet-20240229":       (0.003,  0.015),
+    "claude-opus-4": (0.015, 0.075),
+    "claude-sonnet-4-5": (0.003, 0.015),
+    "claude-sonnet-4-5-20251001": (0.003, 0.015),
+    "claude-3-5-sonnet-20241022": (0.003, 0.015),
+    "claude-3-5-sonnet-20240620": (0.003, 0.015),
+    "claude-3-5-haiku-20241022": (0.0008, 0.004),
+    "claude-3-haiku-20240307": (0.00025, 0.00125),
+    "claude-3-opus-20240229": (0.015, 0.075),
+    "claude-3-sonnet-20240229": (0.003, 0.015),
 }
 
 
@@ -51,7 +52,8 @@ def patch(client: Any) -> Any:
     """
     if not hasattr(client, "messages") or not hasattr(client.messages, "create"):
         raise TypeError(
-            f"rubra.patch_anthropic() expects an Anthropic client, got {type(client).__name__}"
+            "rubra.patch_anthropic() expects an Anthropic client, "
+            f"got {type(client).__name__}"
         )
 
     completions = client.messages
