@@ -383,7 +383,7 @@ report = rubra.evaluate(rubra.get_last_trace())
         <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
         <pre><span class="tok-com"># from the OCI registry — no chart repo needed</span>
 helm install rubra oci://ghcr.io/pm1715/charts/rubra \
-  --version 0.1.0
+  --version 0.1.3
 
 <span class="tok-com"># with a real judge-model API key + Postgres:</span>
 helm upgrade rubra oci://ghcr.io/pm1715/charts/rubra \
@@ -407,21 +407,23 @@ helm upgrade rubra oci://ghcr.io/pm1715/charts/rubra \
       <div class="kicker">Positioning</div>
       <h2>How Rubra compares</h2>
     </div>
-    <div class="caveat">Rubra is early (v0.1.x) and hasn't been battle-tested at the scale TruLens or RAGAS have. This table reflects what each project's public docs and source describe as of this writing, not independent benchmarking — treat it as a starting point for your own evaluation, not a verdict.</div>
+    <div class="caveat">Rubra is early (v0.1.x) and hasn't been battle-tested at the scale TruLens or RAGAS have. An earlier version of this table overstated a few of these rows based on general knowledge rather than checking current docs — the version below has been corrected after actually verifying TruLens's and RAGAS's current capabilities. If something here is still wrong, please open an issue.</div>
     <div class="table-wrap">
       <table class="compare">
         <tr><th>Feature</th><th>Rubra</th><th>TruLens</th><th>RAGAS</th><th>DeepEval</th></tr>
-        <tr><td>1-line agent instrumentation</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
-        <tr><td>Tool orchestration metrics (11 unique)</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td>Partial</td></tr>
+        <tr><td>Lightweight agent instrumentation</td><td class="yes">Yes</td><td class="yes">Yes (TruChain/TruGraph, @instrument())</td><td class="no">Manual (dataset-based)</td><td class="no">Manual</td></tr>
+        <tr><td>Tool orchestration metric depth (11 fine-grained metrics)</td><td class="yes">Yes</td><td>Partial (7 agent evaluators)</td><td>Partial (ToolCallAccuracy/F1)</td><td>Partial</td></tr>
         <tr><td>OpenAI + Anthropic auto-trace</td><td class="yes">Yes</td><td>Manual</td><td>Manual</td><td>Manual</td></tr>
-        <tr><td>Reference-free goal evaluation</td><td class="yes">Yes</td><td class="no">No</td><td>Partial</td><td>Partial</td></tr>
+        <tr><td>Reference-free goal evaluation</td><td class="yes">Yes</td><td class="yes">Yes</td><td>Partial</td><td>Partial</td></tr>
         <tr><td>LangGraph + LangChain integration</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td><td>Partial</td></tr>
         <tr><td>Safety metrics (injection, PII, scope)</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes</td></tr>
-        <tr><td>Self-hosted REST API + Dashboard</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td><td class="yes">Yes</td></tr>
-        <tr><td>Zero config (SQLite default)</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td>Partial</td></tr>
+        <tr><td>OpenTelemetry export</td><td class="yes">Yes</td><td class="yes">Yes (native OTEL — more mature)</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Self-hosted REST API + Dashboard</td><td class="yes">Yes</td><td class="yes">Yes (mature)</td><td class="no">No (metrics library)</td><td class="yes">Yes</td></tr>
+        <tr><td>Zero config (SQLite default)</td><td class="yes">Yes</td><td class="no">No</td><td>N/A</td><td>Partial</td></tr>
+        <tr><td>Benchmarked against a public agent dataset</td><td class="no">No</td><td class="yes">Yes (TRAIL dataset)</td><td>Not verified</td><td>Not verified</td></tr>
       </table>
     </div>
-    <p style="margin-top:24px;color:var(--ink-soft);font-size:15px;max-width:76ch">Where Rubra is most confidently different is the <strong style="color:var(--ink)">11 tool-orchestration metrics</strong> — precision/recall/F1 on tool selection, call-order scoring, redundant-call detection — which the others don't expose as first-class metrics today. Most of the rest of the table is closer to <em>different design choices</em> than <em>better or worse</em>: TruLens and DeepEval in particular have mature ecosystems and production track records Rubra doesn't have yet.</p>
+    <p style="margin-top:24px;color:var(--ink-soft);font-size:15px;max-width:76ch">Where Rubra is most confidently different is <strong style="color:var(--ink)">depth on tool-orchestration mechanics</strong> — call-order scoring, redundant-call detection, chain-validity, per-tool latency — which the others expose in narrower form (RAGAS has 2-3 tool-call metrics; TruLens's agent evaluators are broader but don't get this granular). Everywhere else, this is closer to <em>different design choices</em> than <em>Rubra wins</em>. TruLens in particular is a substantially more mature project: natively built on OpenTelemetry, with lightweight one-line instrumentation for LangChain/LangGraph, and its agent evaluators have been benchmarked against a public dataset — something Rubra hasn't done yet.</p>
   </div>
 </section>
 

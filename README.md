@@ -30,22 +30,23 @@ print(f"Passed:      {report.passed}/{report.total_metrics}")
 
 ## How Rubra compares
 
-Rubra is early (v0.1.x) and hasn't been battle-tested at the scale TruLens or RAGAS have — the table below reflects what each project's public docs and source describe as of this writing, not independent benchmarking. Treat it as a starting point for your own evaluation, not a verdict.
+Rubra is early (v0.1.x) and hasn't been battle-tested at the scale TruLens or RAGAS have. An earlier version of this table overstated a few of these rows based on general knowledge rather than checking current docs — the version below has been corrected after actually verifying TruLens's and RAGAS's current capabilities. If something here is still wrong, please open an issue.
 
 | Feature | **Rubra** | TruLens | RAGAS | DeepEval |
 |---------|:---------:|:-------:|:-----:|:--------:|
-| 1-line agent instrumentation | ✅ | ❌ | ❌ | ❌ |
-| Tool orchestration metrics (11 unique) | ✅ | ❌ | ❌ | Partial |
+| Lightweight agent instrumentation | ✅ | ✅ (`TruChain`/`TruGraph`, `@instrument()`) | Manual (dataset-based, not live tracing) | Manual |
+| Tool orchestration metric depth (11 fine-grained metrics) | ✅ | Partial (7 agent evaluators, broader scope) | Partial (`ToolCallAccuracy`, `ToolCallF1`) | Partial |
 | OpenAI + Anthropic auto-trace | ✅ | Manual | Manual | Manual |
-| Reference-free goal evaluation | ✅ | ❌ | Partial | Partial |
+| Reference-free goal evaluation | ✅ | ✅ | Partial | Partial |
 | LangGraph + LangChain integration | ✅ | ✅ | ❌ | Partial |
 | Safety metrics (injection, PII, scope) | ✅ | ❌ | ❌ | ✅ |
-| OpenTelemetry export | ✅ | ❌ | ❌ | ❌ |
-| Self-hosted REST API + Dashboard | ✅ | ✅ | ❌ | ✅ |
+| OpenTelemetry export | ✅ | ✅ (built natively on OTEL — more mature) | ❌ | ❌ |
+| Self-hosted REST API + Dashboard | ✅ | ✅ (mature, Streamlit-based) | ❌ (metrics library, not an app) | ✅ |
 | Pytest plugin | ✅ | ❌ | ❌ | ✅ |
-| Zero config (SQLite default) | ✅ | ❌ | ❌ | Partial |
+| Zero config (SQLite default) | ✅ | ❌ | N/A | Partial |
+| Benchmarked against a public agent dataset | ❌ | ✅ (TRAIL dataset) | — (not verified) | — (not verified) |
 
-Where Rubra is most confidently different is the **11 tool-orchestration metrics** — precision/recall/F1 on tool selection, call-order scoring, redundant-call detection — which the others don't expose as first-class metrics today. Most of the rest of the table is closer to "different design choices" than "better or worse": TruLens and DeepEval in particular have mature ecosystems and production track records Rubra doesn't have yet.
+Where Rubra is most confidently different is **depth on tool-orchestration mechanics** — call-order scoring, redundant-call detection, chain-validity, per-tool latency — which the others expose in narrower form (RAGAS has 2-3 tool-call metrics; TruLens's agent evaluators are broader but don't get this granular). Everywhere else, this is closer to "different design choices" than "Rubra wins." TruLens in particular is a substantially more mature project: natively built on OpenTelemetry, with lightweight one-line instrumentation for LangChain/LangGraph, and its agent evaluators have been benchmarked against a public dataset — something Rubra hasn't done yet.
 
 ---
 
