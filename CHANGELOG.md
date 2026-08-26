@@ -6,6 +6,19 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `expected_tool_args` — optional per-tool expected-argument ground truth (`@rubra.agent(expected_tool_args={"search": {"query": "..."}})`). When provided, `tool_call_order_score` and `tool_argument_completeness` score actual argument correctness instead of just tool-name presence. Fully backward compatible — omit it and both metrics behave exactly as before.
+- `tests/unit/test_tool_metrics.py` — direct unit coverage for all 11 tool-orchestration metrics. There was previously no dedicated test file for this category at all.
+
+### Changed
+- `tool_call_order_score` now uses a weighted LCS (argument-aware) when `expected_tool_args` is set, instead of a name-only LCS that treated a right-tool/wrong-argument call as a full match.
+- All 5 goal/LLM-judge prompts (`goal_completion`, `answer_correctness`, `reasoning_quality`, `task_understanding`, `hallucination_score`) rewritten with explicit adversarial framing ("assume not achieved when uncertain") and worked few-shot examples, after a code-level audit of competing frameworks' judge prompts found Rubra's lacked both.
+
+### Fixed
+- `intermediate_step_grounding` replaced a fixed 20-character substring probe (which missed grounding evidence appearing later in a tool's output) with real token-overlap matching across the full output.
+- `tool_argument_completeness` previously only checked that argument values were non-empty, never that they were correct.
+- `tool_error_recovery_rate` had a bug where a tool call's own paired error-response span always satisfied the "did the agent continue" check, making the metric close to a no-op. Now checks for an actual subsequent tool call or final output.
+
 ## [0.1.1] — 2026-08-25
 
 ### Added

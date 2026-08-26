@@ -52,8 +52,7 @@ def _judge(
 def goal_completion(trace: Trace, model: str = "gpt-4o-mini") -> MetricResult:
     """
     LLM judge: did the agent fully achieve the stated task/goal?
-    Score: 0.0–1.0. Reference-free — no ground truth needed.
-    This is the metric that RAGAS AgentGoalAccuracy gets wrong.
+    Score: 0.0-1.0. Reference-free — no ground truth needed.
     """
     task = trace.task or trace.task_description
     output = trace.final_output
@@ -76,20 +75,24 @@ def goal_completion(trace: Trace, model: str = "gpt-4o-mini") -> MetricResult:
             reason="No final output produced by the agent.",
         )
 
-    prompt = f"""
-Evaluate whether the agent's response fully achieves the stated goal.
+    prompt = f"""You are a strict, adversarial evaluator. Assume the goal was NOT fully achieved unless the response clearly proves otherwise — when uncertain, score lower, not higher.
 
 TASK: {task}
 
 AGENT RESPONSE: {output[:2000]}
 
-Rate on a scale of 0.0 to 1.0:
-- 1.0 = task completely and correctly accomplished
-- 0.7 = mostly accomplished, minor gaps
-- 0.4 = partially accomplished
-- 0.0 = not accomplished or completely wrong
+Score on this rubric:
+- 1.0 = goal completely and correctly accomplished, nothing missing
+- 0.75 = accomplished with a minor, non-critical gap
+- 0.5 = partially accomplished — a significant part of the goal is missing or wrong
+- 0.25 = mostly failed — only a small, tangential part of the goal was addressed
+- 0.0 = goal not accomplished, or the response is wrong or off-topic
 
-Return JSON: {{"score": <float>, "passed": <bool>, "reason": "<one sentence>"}}
+Examples:
+Task: "Book a flight from NYC to LA for tomorrow" / Response: "I found flights from NYC to LA tomorrow, the cheapest is $220 on Delta at 8am." -> {{"score": 0.5, "passed": false, "reason": "Found options but never actually booked — the goal was booking, not searching."}}
+Task: "Summarize this article in 3 bullet points" / Response: exactly 3 accurate, well-formed bullet points covering the article's key ideas -> {{"score": 1.0, "passed": true, "reason": "Delivered exactly what was asked, accurately and in the right format."}}
+
+Return JSON: {{"score": <float>, "passed": <bool>, "reason": "<one sentence, cite specific evidence>"}}
 """
     result = _judge(prompt, model=model)
     score = float(result.get("score", 0.0))
@@ -129,30 +132,34 @@ def answer_correctness(trace: Trace, model: str = "gpt-4o-mini") -> MetricResult
         )
 
     if expected:
-        prompt = f"""
-Compare the agent's response to the expected correct answer.
+        prompt = f"""You are a strict, adversarial evaluator comparing an answer against a known-correct reference. Assume the response is wrong unless it clearly matches — do not give credit for confident-sounding but unsupported claims.
 
 EXPECTED: {expected}
 AGENT RESPONSE: {output[:2000]}
 
-Score 0.0–1.0:
-- 1.0 = semantically equivalent to expected
-- 0.7 = mostly correct, minor difference
-- 0.4 = partially correct
+Score 0.0-1.0:
+- 1.0 = semantically equivalent to expected, no material difference
+- 0.7 = mostly correct, one minor difference
+- 0.4 = partially correct — gets the general idea but a key detail is wrong
 - 0.0 = incorrect or contradicts expected
 
-Return JSON: {{"score": <float>, "passed": <bool>, "reason": "<one sentence>"}}
+Example: Expected: "Paris" / Response: "The capital of France is Paris, a city on the Seine." -> {{"score": 1.0, "passed": true, "reason": "Correct answer; the extra detail doesn't change correctness."}}
+
+Return JSON: {{"score": <float>, "passed": <bool>, "reason": "<one sentence, cite the specific match or mismatch>"}}
 """
     else:
         task = trace.task or trace.task_description or ""
-        prompt = f"""
-Evaluate if the agent's response is factually accurate for the given task.
+        prompt = f"""You are a strict, adversarial fact-checker. Assume claims are unverified unless clearly correct — when uncertain about a factual claim, score it down rather than giving benefit of the doubt.
 
 TASK: {task}
 AGENT RESPONSE: {output[:2000]}
 
-Score 0.0–1.0 for factual accuracy. Be strict.
-Return JSON: {{"score": <float>, "passed": <bool>, "reason": "<one sentence>"}}
+Score 0.0-1.0 for factual accuracy:
+- 1.0 = every factual claim checks out
+- 0.5 = mix of correct and incorrect/unverifiable claims
+- 0.0 = the central factual claim is wrong
+
+Return JSON: {{"score": <float>, "passed": <bool>, "reason": "<one sentence, name the claim that was checked>"}}
 """
 
     result = _judge(prompt, model=model)
@@ -194,19 +201,20 @@ def reasoning_quality(trace: Trace, model: str = "gpt-4o-mini") -> MetricResult:
             reason="No output to evaluate reasoning.",
         )
 
-    prompt = f"""
-Evaluate the quality of reasoning shown by this agent.
+    prompt = f"""You are a strict, adversarial evaluator of agent reasoning quality. Do not reward a correct-looking final answer if the path to it was incoherent or unjustified — you are scoring the PROCESS, not just the outcome.
 
 TASK: {trace.task or 'not specified'}
 TOOLS USED (in order): {tool_sequence}
 FINAL RESPONSE: {output[:2000]}
 
-Assess reasoning quality:
-- Did the agent break down the problem logically?
-- Did tool usage follow a coherent plan?
-- Is the reasoning transparent in the response?
+Assess:
+- Did the agent break the problem down logically before acting?
+- Did tool usage follow a coherent plan, or look arbitrary/redundant?
+- Is the reasoning transparent and traceable in the response, or just an assertion?
 
-Score 0.0–1.0. Return JSON: {{"score": <float>, "passed": <bool>, "reason": "<one sentence>"}}
+Score 0.0-1.0. When the tool sequence looks arbitrary or the response doesn't explain itself, score low even if the final answer happens to be right.
+
+Return JSON: {{"score": <float>, "passed": <bool>, "reason": "<one sentence, cite specific evidence from the tool sequence or response>"}}
 """
     result = _judge(prompt, model=model)
     score = float(result.get("score", 0.0))
@@ -243,18 +251,19 @@ def task_understanding(trace: Trace, model: str = "gpt-4o-mini") -> MetricResult
             reason="Task or output missing.",
         )
 
-    prompt = f"""
-Did the agent correctly understand what the task was asking for?
+    prompt = f"""You are a strict, adversarial evaluator. Look specifically for the agent answering a DIFFERENT, easier, or narrower question than the one actually asked — this is a common, subtle failure mode. Assume misunderstanding unless the response clearly addresses the full task.
 
 TASK: {task}
 AGENT'S RESPONSE: {output[:1500]}
 
 Evaluate:
-- Did the agent address the right question?
-- Did it solve the stated problem (not a different one)?
-- Did it miss important aspects of the request?
+- Did the agent address the right question, or a related-but-different one?
+- Did it solve the stated problem in full, not just part of it?
+- Did it miss any explicit constraint or aspect the task named?
 
-Score 0.0–1.0. Return JSON: {{"score": <float>, "passed": <bool>, "reason": "<one sentence>"}}
+Example: Task: "Compare X and Y, then recommend one" / Response: only describes X and Y without a recommendation -> {{"score": 0.4, "passed": false, "reason": "Understood the comparison but skipped the explicitly-requested recommendation."}}
+
+Score 0.0-1.0. Return JSON: {{"score": <float>, "passed": <bool>, "reason": "<one sentence, name the specific aspect addressed or missed>"}}
 """
     result = _judge(prompt, model=model)
     score = float(result.get("score", 0.0))
@@ -304,9 +313,7 @@ def hallucination_score(trace: Trace, model: str = "gpt-4o-mini") -> MetricResul
             reason="No tool results to ground the response — cannot detect hallucinations.",
         )
 
-    prompt = f"""
-Determine whether the agent's final response contains hallucinated facts
-not supported by the tool retrieval results.
+    prompt = f"""You are a strict, adversarial fact-checker. Your default assumption is that any specific claim NOT traceable to the tool results below is fabricated — do not give the agent benefit of the doubt for plausible-sounding details it could have inferred rather than retrieved.
 
 TOOL RESULTS:
 {tool_outputs}
@@ -314,11 +321,11 @@ TOOL RESULTS:
 AGENT'S FINAL RESPONSE:
 {output[:2000]}
 
-Check: are there claims in the response that contradict or are absent from
-the tool results? Ignore style differences — focus on factual accuracy.
+For every specific, checkable claim (numbers, names, dates, facts) in the response, verify it appears in or is a fair restatement of the tool results. Ignore style/phrasing differences — focus only on whether the substance is grounded.
 
-Score 0.0–1.0 where 1.0 = no hallucinations, 0.0 = major fabrication.
-Return JSON: {{"score": <float>, "passed": <bool>, "reason": "<one sentence>", "hallucinated_claims": ["..."]}}
+Score 0.0-1.0 where 1.0 = every claim traces back to the tool results, 0.5 = a mix of grounded and fabricated claims, 0.0 = the central claim is fabricated or contradicts the tool results.
+
+Return JSON: {{"score": <float>, "passed": <bool>, "reason": "<one sentence>", "hallucinated_claims": ["<specific claim not supported by tool results>", "..."]}}
 """
     result = _judge(prompt, model=model)
     score = float(result.get("score", 1.0))

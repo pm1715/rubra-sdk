@@ -178,6 +178,10 @@ class Trace(BaseModel):
     # Ground truth — optional; enables reference-based metrics
     expected_output: str | None = None
     expected_tool_calls: list[str] | None = None  # ordered list of tool names
+    # Optional: expected arguments per tool name, e.g. {"search_web": {"query": "..."}}.
+    # When provided, tool_call_order_score and tool_argument_completeness score
+    # argument correctness, not just tool-name presence. Absent = name-only scoring.
+    expected_tool_args: dict[str, dict[str, Any]] | None = None
 
     def finish(
         self,

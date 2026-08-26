@@ -35,6 +35,7 @@ def agent(
     tags: list[str] | None = None,
     expected_output: str | None = None,
     expected_tool_calls: list[str] | None = None,
+    expected_tool_args: dict[str, dict[str, Any]] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> F | Callable[[F], F]:
     """
@@ -63,6 +64,7 @@ def agent(
                     tags=tags or [],
                     expected_output=expected_output,
                     expected_tool_calls=expected_tool_calls,
+                    expected_tool_args=expected_tool_args,
                     metadata=metadata or {},
                 )
                 async with TraceContext(trace):
@@ -89,6 +91,7 @@ def agent(
                     tags=tags or [],
                     expected_output=expected_output,
                     expected_tool_calls=expected_tool_calls,
+                    expected_tool_args=expected_tool_args,
                     metadata=metadata or {},
                 )
                 with TraceContext(trace):

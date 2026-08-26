@@ -1,7 +1,11 @@
 """
-11 Tool Orchestration metrics — Rubra's USP.
-These are not available in TruLens, RAGAS, or DeepEval.
-All deterministic; no LLM calls required.
+11 Tool Orchestration metrics. All deterministic; no LLM calls required.
+
+TruLens, RAGAS, and DeepEval each have some tool-call evaluation of their own
+(RAGAS's ToolCallAccuracy/F1, DeepEval's ToolCorrectnessMetric, TruLens's
+agent evaluators) — Rubra's differentiation is breadth (11 distinct signals
+vs. 2-4) and two checks with no found equivalent elsewhere
+(redundant_tool_call_rate, tool_error_recovery_rate), not exclusivity.
 """
 from __future__ import annotations
 
@@ -126,8 +130,11 @@ def tool_selection_f1(trace: Trace) -> MetricResult:
 
 def tool_call_order_score(trace: Trace) -> MetricResult:
     """
-    Compares actual tool call order to expected order (when provided).
-    Uses longest common subsequence / sequence length ratio.
+    Compares actual tool call order to expected order (when provided), via
+    longest common subsequence. When `expected_tool_args` ground truth is also
+    available, uses a *weighted* LCS — a matched call contributes its argument
+    correctness (0.0-1.0) rather than a flat 1.0, so a right-tool-wrong-args
+    call scores partial credit instead of counting as a full match.
     """
     expected = trace.expected_tool_calls
     if not expected:
@@ -138,11 +145,8 @@ def tool_call_order_score(trace: Trace) -> MetricResult:
             reason="No expected_tool_calls provided.",
         )
 
-    actual_sequence = [
-        s.tool_call_data.tool_name
-        for s in trace.tool_call_spans
-        if s.tool_call_data
-    ]
+    actual_spans = [s for s in trace.tool_call_spans if s.tool_call_data]
+    actual_sequence = [s.tool_call_data.tool_name for s in actual_spans]
 
     if not actual_sequence:
         return MetricResult(
@@ -151,6 +155,23 @@ def tool_call_order_score(trace: Trace) -> MetricResult:
             passed=False,
             category="tool",
             reason="No tool calls made.",
+        )
+
+    expected_args = trace.expected_tool_args
+    if expected_args:
+        actual_args = [s.tool_call_data.arguments for s in actual_spans]
+        weighted_len = _weighted_lcs(actual_sequence, expected, actual_args, expected_args)
+        score = weighted_len / max(len(actual_sequence), len(expected))
+        return MetricResult(
+            metric_name="tool_call_order_score",
+            score=score,
+            passed=score >= 0.7,
+            category="tool",
+            reason=(
+                f"Weighted LCS {weighted_len:.2f} (argument-aware) vs sequence lengths "
+                f"actual={len(actual_sequence)}, expected={len(expected)}."
+            ),
+            metadata={"actual_sequence": actual_sequence, "expected": expected, "mode": "weighted"},
         )
 
     lcs_len = _lcs_length(actual_sequence, expected)
@@ -162,10 +183,50 @@ def tool_call_order_score(trace: Trace) -> MetricResult:
         category="tool",
         reason=(
             f"LCS length {lcs_len} vs sequence lengths "
-            f"actual={len(actual_sequence)}, expected={len(expected)}."
+            f"actual={len(actual_sequence)}, expected={len(expected)} "
+            "(name-only — pass expected_tool_args for argument-aware scoring)."
         ),
-        metadata={"actual_sequence": actual_sequence, "expected": expected},
+        metadata={"actual_sequence": actual_sequence, "expected": expected, "mode": "name_only"},
     )
+
+
+def _weighted_lcs(
+    actual: list[str],
+    expected: list[str],
+    actual_args: list[dict],
+    expected_args: dict[str, dict],
+) -> float:
+    """
+    LCS where a match's weight is its argument-overlap score (1.0 if the tool
+    has no known expected args) instead of a flat 1.0 — rewards right-tool
+    right-args over right-tool wrong-args, without zeroing the whole sequence
+    the way a hard gate would.
+    """
+    m, n = len(actual), len(expected)
+    dp = [[0.0] * (n + 1) for _ in range(m + 1)]
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if actual[i - 1] == expected[j - 1]:
+                exp = expected_args.get(expected[j - 1])
+                weight = _arg_overlap_score(actual_args[i - 1], exp) if exp else 1.0
+                dp[i][j] = dp[i - 1][j - 1] + weight
+            else:
+                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
+    return dp[m][n]
+
+
+_GROUNDING_STOPWORDS = {
+    "the", "and", "for", "with", "that", "this", "from", "was", "are",
+    "were", "has", "have", "had", "not", "you", "your", "true", "false", "null",
+}
+
+
+def _meaningful_tokens(text: str) -> set[str]:
+    """Lowercased alphanumeric tokens of length >= 3, minus common stopwords."""
+    import re
+
+    tokens = re.findall(r"[A-Za-z0-9_.-]{3,}", text)
+    return {t.lower() for t in tokens if t.lower() not in _GROUNDING_STOPWORDS}
 
 
 def _lcs_length(a: list[str], b: list[str]) -> int:
@@ -313,12 +374,19 @@ def tool_error_recovery_rate(trace: Trace) -> MetricResult:
             reason="No tool errors to recover from.",
         )
 
-    # Check how many errors the agent recovered from (continued after the error)
+    # Check how many errors the agent recovered from. NOTE: this deliberately
+    # checks position within tool_call_spans, not trace.spans — the error's
+    # own paired TOOL_RESPONSE span always immediately follows it in
+    # trace.spans, which made the old "any span after this index" check
+    # almost always true regardless of whether the agent did anything
+    # productive afterward. Recovery = another tool call follows, or the
+    # trace still reached a final output.
+    call_spans = trace.tool_call_spans
     recovered = 0
     for err_span in error_tool_spans:
-        # If there are any spans AFTER this error span, the agent continued
-        err_idx = trace.spans.index(err_span) if err_span in trace.spans else -1
-        if err_idx >= 0 and err_idx < len(trace.spans) - 1:
+        err_idx = call_spans.index(err_span) if err_span in call_spans else -1
+        has_later_call = err_idx >= 0 and err_idx < len(call_spans) - 1
+        if has_later_call or trace.final_output:
             recovered += 1
 
     # Final factor: did the agent produce output at all?
@@ -389,11 +457,15 @@ def intermediate_step_grounding(trace: Trace) -> MetricResult:
         prev_output = str(prev_response.tool_response_data.output or "").strip()
         curr_args = str(curr_call.tool_call_data.arguments if curr_call.tool_call_data else "").strip()
 
-        # Check if any meaningful chunk of prev output appears in curr args
-        if prev_output and len(prev_output) >= 5:
-            chunk = prev_output[:20]  # first 20 chars as a probe
-            if chunk.lower() in curr_args.lower():
-                grounded_transitions += 1
+        # Token-overlap check: does ANY meaningful token from the previous
+        # tool's output reappear in the next call's arguments? A fixed
+        # substring probe (e.g. just the first N characters) misses grounding
+        # evidence that isn't at the very start of the output — this checks
+        # the whole thing.
+        prev_tokens = _meaningful_tokens(prev_output)
+        curr_tokens = _meaningful_tokens(curr_args)
+        if prev_tokens and (prev_tokens & curr_tokens):
+            grounded_transitions += 1
 
     if checked_transitions == 0:
         return MetricResult(
@@ -424,11 +496,10 @@ def intermediate_step_grounding(trace: Trace) -> MetricResult:
 
 def tool_argument_completeness(trace: Trace) -> MetricResult:
     """
-    Measures the proportion of tool calls where all required arguments appear non-empty.
-    Proxy for avoiding parameter hallucination without LLM verification.
-
-    Complement to hallucination_free_calls (which checks for empty args entirely).
-    This checks that individual argument VALUES are non-trivial.
+    When `expected_tool_args` ground truth is provided, scores actual argument
+    *correctness* per call (fraction of expected keys whose value matches).
+    Without ground truth, falls back to a non-empty-values presence check —
+    a proxy for parameter hallucination, not correctness.
     """
     tool_spans = trace.tool_call_spans
     if not tool_spans:
@@ -439,6 +510,41 @@ def tool_argument_completeness(trace: Trace) -> MetricResult:
             reason="No tool calls in trace.",
         )
 
+    expected_args = trace.expected_tool_args
+    if expected_args:
+        scored_calls = 0
+        total_score = 0.0
+        for span in tool_spans:
+            if not span.tool_call_data:
+                continue
+            exp = expected_args.get(span.tool_call_data.tool_name)
+            if exp is None:
+                continue  # no ground truth for this tool — excluded, not penalized
+            scored_calls += 1
+            total_score += _arg_overlap_score(span.tool_call_data.arguments, exp)
+
+        if scored_calls == 0:
+            return MetricResult(
+                metric_name="tool_argument_completeness",
+                score=None,
+                category="tool",
+                reason="expected_tool_args provided but no calls matched a tool with ground truth.",
+            )
+
+        score = total_score / scored_calls
+        return MetricResult(
+            metric_name="tool_argument_completeness",
+            score=score,
+            passed=score >= 0.8,
+            category="tool",
+            reason=(
+                f"Argument correctness averaged {score:.0%} across {scored_calls} "
+                "call(s) with known-expected arguments."
+            ),
+            metadata={"scored_calls": scored_calls, "mode": "correctness"},
+        )
+
+    # Fallback: no ground truth — presence-only proxy (original behavior).
     complete_calls = 0
     for span in tool_spans:
         if not span.tool_call_data:
@@ -446,7 +552,6 @@ def tool_argument_completeness(trace: Trace) -> MetricResult:
         args = span.tool_call_data.arguments
         if not args:
             continue
-        # All argument values must be non-None and non-empty-string
         all_complete = all(
             v is not None and str(v).strip() != ""
             for v in args.values()
@@ -460,9 +565,23 @@ def tool_argument_completeness(trace: Trace) -> MetricResult:
         score=score,
         passed=score >= 0.9,
         category="tool",
-        reason=f"{complete_calls}/{len(tool_spans)} tool calls had complete, non-empty arguments.",
-        metadata={"complete_calls": complete_calls, "total": len(tool_spans)},
+        reason=(
+            f"{complete_calls}/{len(tool_spans)} tool calls had complete, non-empty arguments "
+            "(presence-only — pass expected_tool_args for correctness scoring)."
+        ),
+        metadata={"complete_calls": complete_calls, "total": len(tool_spans), "mode": "presence"},
     )
+
+
+def _arg_overlap_score(actual: dict, expected: dict) -> float:
+    """Fraction of expected key/value pairs the actual arguments got right."""
+    if not expected:
+        return 1.0
+    matched = sum(
+        1 for k, v in expected.items()
+        if k in actual and str(actual[k]) == str(v)
+    )
+    return matched / len(expected)
 
 
 # ---------------------------------------------------------------------------
