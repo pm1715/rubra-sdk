@@ -2,18 +2,19 @@
 Core trace and span data models.
 All storage, metrics, and API layers speak these types — single source of truth.
 """
+
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _uuid() -> str:
@@ -25,7 +26,7 @@ def _uuid() -> str:
 # ---------------------------------------------------------------------------
 
 
-class SpanType(str, Enum):
+class SpanType(StrEnum):
     LLM_CALL = "llm_call"
     TOOL_CALL = "tool_call"
     TOOL_RESPONSE = "tool_response"
@@ -33,14 +34,14 @@ class SpanType(str, Enum):
     ERROR = "error"
 
 
-class TraceStatus(str, Enum):
+class TraceStatus(StrEnum):
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
     TIMEOUT = "timeout"
 
 
-class SpanStatus(str, Enum):
+class SpanStatus(StrEnum):
     OK = "ok"
     ERROR = "error"
 
@@ -107,7 +108,7 @@ class Span(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
-    def _compute_duration(self) -> "Span":
+    def _compute_duration(self) -> Span:
         if self.ended_at and self.duration_ms is None:
             delta = (self.ended_at - self.started_at).total_seconds()
             self.duration_ms = round(delta * 1000, 3)
@@ -119,7 +120,7 @@ class Span(BaseModel):
         status: SpanStatus = SpanStatus.OK,
         error_message: str | None = None,
         error_type: str | None = None,
-    ) -> "Span":
+    ) -> Span:
         self.ended_at = _now()
         self.status = status
         self.error_message = error_message
@@ -189,7 +190,7 @@ class Trace(BaseModel):
         output: str | None = None,
         status: TraceStatus = TraceStatus.COMPLETED,
         error_message: str | None = None,
-    ) -> "Trace":
+    ) -> Trace:
         self.ended_at = _now()
         self.final_output = output
         self.status = status

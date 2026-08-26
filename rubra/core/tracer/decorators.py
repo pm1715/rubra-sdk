@@ -2,11 +2,13 @@
 @rubra.agent and @rubra.tool decorators.
 Supports sync and async functions transparently.
 """
+
 from __future__ import annotations
 
 import functools
 import inspect
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from rubra.core.tracer.context import (
     SpanContext,
@@ -18,9 +20,9 @@ from rubra.core.tracer.models import (
     Span,
     SpanStatus,
     SpanType,
+    ToolCallData,
     Trace,
     TraceStatus,
-    ToolCallData,
 )
 
 F = TypeVar("F", bound=Callable[..., Any])
@@ -263,14 +265,15 @@ def _sanitize_output(obj: Any) -> Any:
     return _sanitize(obj)
 
 
-_last_trace: "Trace | None" = None
+_last_trace: Trace | None = None
 
 
-def _store_trace(trace: "Trace") -> None:
+def _store_trace(trace: Trace) -> None:
     global _last_trace
     _last_trace = trace
     try:
         from rubra.core.storage.db import auto_init_storage
+
         storage = auto_init_storage()
         storage.save_trace(trace)
     except Exception:

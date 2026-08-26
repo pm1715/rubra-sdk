@@ -1,10 +1,10 @@
 from rubra.core.metrics.goal.metrics import (
-    run_goal_metrics,
-    goal_completion,
     answer_correctness,
-    reasoning_quality,
-    task_understanding,
+    goal_completion,
     hallucination_score,
+    reasoning_quality,
+    run_goal_metrics,
+    task_understanding,
 )
 
 __all__ = [

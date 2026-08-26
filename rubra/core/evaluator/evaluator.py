@@ -2,15 +2,16 @@
 Main evaluate() entry point.
 Accepts a Trace, runs requested metrics, persists results, returns EvalReport.
 """
+
 from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
+from datetime import UTC
 from typing import Any, Literal
 
 from rubra.core.metrics.execution.metrics import MetricResult, run_execution_metrics
 from rubra.core.tracer.models import Trace
-
 
 # ---------------------------------------------------------------------------
 # EvalReport — structured output of an evaluation run
@@ -69,8 +70,13 @@ class EvalReport:
     def summary(self) -> str:
         lines = [
             f"EvalReport for '{self.agent_name}' (trace {self.trace_id[:8]}…)",
-            f"  Metrics: {self.total_metrics}  |  Pass: {self.passed}  Fail: {self.failed}  N/A: {self.not_applicable}",
-            f"  Avg score: {self.average_score:.3f}" if self.average_score is not None else "  Avg score: N/A",
+            f"  Metrics: {self.total_metrics}  |  Pass: {self.passed}  "
+            f"Fail: {self.failed}  N/A: {self.not_applicable}",
+            (
+                f"  Avg score: {self.average_score:.3f}"
+                if self.average_score is not None
+                else "  Avg score: N/A"
+            ),
         ]
         if self.rubra_score is not None:
             lines.append(f"  Rubra Score: {self.rubra_score:.3f}")
@@ -90,7 +96,9 @@ class EvalReport:
             HTML string (or path string if path was given).
         """
         import html as _html
-        from datetime import datetime, timezone
+        from datetime import datetime
+
+        from rubra.__version__ import __version__
 
         def _score_color(score: float | None, passed: bool | None) -> str:
             if score is None:
@@ -102,14 +110,24 @@ class EvalReport:
             return "#f59e0b"
 
         def _badge(passed: bool | None) -> str:
+            style = "color:#fff;padding:2px 8px;border-radius:4px;font-size:11px"
             if passed is True:
-                return '<span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px">PASS</span>'
+                return f'<span style="background:#22c55e;{style}">PASS</span>'
             if passed is False:
-                return '<span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px">FAIL</span>'
-            return '<span style="background:#6b7280;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px">N/A</span>'
+                return f'<span style="background:#ef4444;{style}">FAIL</span>'
+            return f'<span style="background:#6b7280;{style}">N/A</span>'
 
         def _fmt(v: float | None) -> str:
             return f"{v:.4f}" if v is not None else "—"
+
+        _STAT_BOX_STYLE = (
+            "text-align:center;padding:16px;background:#fff;"
+            "border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.08)"
+        )
+        _STAT_LABEL_STYLE = (
+            "font-size:11px;color:#6b7280;margin-top:4px;"
+            "text-transform:uppercase;letter-spacing:.5px"
+        )
 
         cats = self.by_category()
         cat_sections = ""
@@ -121,23 +139,28 @@ class EvalReport:
                 det = "✓" if r.is_deterministic else "LLM"
                 rows += f"""
                 <tr>
-                  <td style="padding:8px 12px;font-family:monospace;font-size:12px">{_html.escape(r.metric_name)}</td>
-                  <td style="padding:8px 12px;text-align:right;font-weight:600;color:{_score_color(r.score, r.passed)}">{sc}</td>
+                  <td style="padding:8px 12px;font-family:monospace;font-size:12px">
+                    {_html.escape(r.metric_name)}</td>
+                  <td style="padding:8px 12px;text-align:right;font-weight:600;
+                    color:{_score_color(r.score, r.passed)}">{sc}</td>
                   <td style="padding:8px 12px;text-align:center">{_badge(r.passed)}</td>
                   <td style="padding:8px 12px;font-size:11px;color:#666">{det}</td>
                   <td style="padding:8px 12px;font-size:11px;color:#555">{reason}</td>
                 </tr>"""
+            th_style = "padding:8px 12px;font-size:11px;color:#6b7280;font-weight:600"
             cat_sections += f"""
             <div style="margin-bottom:28px">
-              <h3 style="text-transform:uppercase;letter-spacing:1px;font-size:12px;color:#dc2626;margin:0 0 8px">{_html.escape(cat)}</h3>
-              <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+              <h3 style="text-transform:uppercase;letter-spacing:1px;font-size:12px;
+                color:#dc2626;margin:0 0 8px">{_html.escape(cat)}</h3>
+              <table style="width:100%;border-collapse:collapse;background:#fff;
+                border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
                 <thead>
                   <tr style="background:#f9fafb;border-bottom:1px solid #e5e7eb">
-                    <th style="padding:8px 12px;text-align:left;font-size:11px;color:#6b7280;font-weight:600">METRIC</th>
-                    <th style="padding:8px 12px;text-align:right;font-size:11px;color:#6b7280;font-weight:600">SCORE</th>
-                    <th style="padding:8px 12px;text-align:center;font-size:11px;color:#6b7280;font-weight:600">RESULT</th>
-                    <th style="padding:8px 12px;text-align:center;font-size:11px;color:#6b7280;font-weight:600">TYPE</th>
-                    <th style="padding:8px 12px;text-align:left;font-size:11px;color:#6b7280;font-weight:600">REASON</th>
+                    <th style="text-align:left;{th_style}">METRIC</th>
+                    <th style="text-align:right;{th_style}">SCORE</th>
+                    <th style="text-align:center;{th_style}">RESULT</th>
+                    <th style="text-align:center;{th_style}">TYPE</th>
+                    <th style="text-align:left;{th_style}">REASON</th>
                   </tr>
                 </thead>
                 <tbody>{rows}
@@ -153,12 +176,16 @@ class EvalReport:
         ]:
             if val is not None:
                 composites += f"""
-                <div style="text-align:center;padding:16px 24px;background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
-                  <div style="font-size:28px;font-weight:700;color:#dc2626">{val:.3f}</div>
-                  <div style="font-size:11px;color:#6b7280;margin-top:4px;text-transform:uppercase;letter-spacing:.5px">{label}</div>
+                <div style="text-align:center;padding:16px 24px;background:#fff;
+                  border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+                  <div style="font-size:28px;font-weight:700;color:#dc2626">
+                    {val:.3f}</div>
+                  <div style="{_STAT_LABEL_STYLE}">{label}</div>
                 </div>"""
 
-        evaluated_at = datetime.fromtimestamp(self.evaluated_at, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        evaluated_at = datetime.fromtimestamp(self.evaluated_at, tz=UTC).strftime(
+            "%Y-%m-%d %H:%M UTC"
+        )
 
         html_doc = f"""<!DOCTYPE html>
 <html lang="en">
@@ -174,8 +201,10 @@ class EvalReport:
 </style>
 </head>
 <body>
-<div style="background:#dc2626;padding:20px 32px;display:flex;align-items:center;gap:16px">
-  <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px">Rubra</div>
+<div style="background:#dc2626;padding:20px 32px;display:flex;
+  align-items:center;gap:16px">
+  <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px">
+    Rubra</div>
   <div style="color:#fca5a5;font-size:13px">Agentic Evaluation Framework</div>
   <div style="margin-left:auto;color:#fca5a5;font-size:12px">{evaluated_at}</div>
 </div>
@@ -185,36 +214,45 @@ class EvalReport:
   <div style="margin-bottom:24px">
     <h1 style="font-size:20px;font-weight:700">{_html.escape(self.agent_name)}</h1>
     <div style="color:#6b7280;font-size:13px;margin-top:4px">
-      Trace <code style="background:#e5e7eb;padding:1px 5px;border-radius:3px">{self.trace_id[:16]}…</code>
-      &nbsp;·&nbsp; {_html.escape(self.task or 'No task description')}
+      Trace <code style="background:#e5e7eb;padding:1px 5px;border-radius:3px">
+        {self.trace_id[:16]}…</code>
+      &nbsp;·&nbsp; {_html.escape(self.task or "No task description")}
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px">
-    <div style="text-align:center;padding:16px;background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+    margin-bottom:28px">
+    <div style="{_STAT_BOX_STYLE}">
       <div style="font-size:28px;font-weight:700">{self.total_metrics}</div>
-      <div style="font-size:11px;color:#6b7280;margin-top:4px;text-transform:uppercase;letter-spacing:.5px">Total Metrics</div>
+      <div style="{_STAT_LABEL_STYLE}">Total Metrics</div>
     </div>
-    <div style="text-align:center;padding:16px;background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+    <div style="{_STAT_BOX_STYLE}">
       <div style="font-size:28px;font-weight:700;color:#22c55e">{self.passed}</div>
-      <div style="font-size:11px;color:#6b7280;margin-top:4px;text-transform:uppercase;letter-spacing:.5px">Passed</div>
+      <div style="{_STAT_LABEL_STYLE}">Passed</div>
     </div>
-    <div style="text-align:center;padding:16px;background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+    <div style="{_STAT_BOX_STYLE}">
       <div style="font-size:28px;font-weight:700;color:#ef4444">{self.failed}</div>
-      <div style="font-size:11px;color:#6b7280;margin-top:4px;text-transform:uppercase;letter-spacing:.5px">Failed</div>
+      <div style="{_STAT_LABEL_STYLE}">Failed</div>
     </div>
-    <div style="text-align:center;padding:16px;background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
-      <div style="font-size:28px;font-weight:700;color:#3b82f6">{_fmt(self.average_score)}</div>
-      <div style="font-size:11px;color:#6b7280;margin-top:4px;text-transform:uppercase;letter-spacing:.5px">Avg Score</div>
+    <div style="{_STAT_BOX_STYLE}">
+      <div style="font-size:28px;font-weight:700;color:#3b82f6">
+        {_fmt(self.average_score)}</div>
+      <div style="{_STAT_LABEL_STYLE}">Avg Score</div>
     </div>
   </div>
 
-  {'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px">' + composites + '</div>' if composites else ''}
+  {
+            '<div style="display:grid;grid-template-columns:repeat(3,1fr);'
+            'gap:12px;margin-bottom:28px">' + composites + "</div>"
+            if composites
+            else ""
+        }
 
   {cat_sections}
 
   <div style="text-align:center;color:#9ca3af;font-size:11px;padding:24px 0">
-    Generated by <strong style="color:#dc2626">Rubra</strong> v0.1.0 · Every aspect, nothing missed.
+    Generated by <strong style="color:#dc2626">Rubra</strong> v{__version__} ·
+    Every aspect, nothing missed.
   </div>
 </div>
 </body>
@@ -294,6 +332,7 @@ def evaluate(
         # Tool orchestration metrics — implemented in Phase 1 next step
         try:
             from rubra.core.metrics.tool.metrics import run_tool_metrics
+
             results.extend(run_tool_metrics(trace))
         except ImportError:
             pass
@@ -301,6 +340,7 @@ def evaluate(
     if "safety" in requested:
         try:
             from rubra.core.metrics.safety.metrics import run_safety_metrics
+
             results.extend(run_safety_metrics(trace))
         except ImportError:
             pass
@@ -308,6 +348,7 @@ def evaluate(
     if "quality" in requested:
         try:
             from rubra.core.metrics.quality.metrics import run_quality_metrics
+
             results.extend(run_quality_metrics(trace))
         except ImportError:
             pass
@@ -315,6 +356,7 @@ def evaluate(
     if "goal" in requested:
         try:
             from rubra.core.metrics.goal.metrics import run_goal_metrics
+
             results.extend(run_goal_metrics(trace, model=judge_model))
         except Exception:
             # Goal metrics require litellm + a reachable model (API key or
@@ -370,7 +412,8 @@ def _compute_composites(report: EvalReport) -> None:
     """
     rubra_score: weighted average across all scored metrics.
     tool_intelligence_score: average of tool-category metrics only.
-    agentic_efficiency_score: (goal_completion * task_completion) / (steps * cost_normalised).
+    agentic_efficiency_score: (goal_completion * task_completion) /
+        (steps * cost_normalised).
     """
     scored = [r for r in report.results if r.score is not None]
     if scored:
@@ -378,7 +421,9 @@ def _compute_composites(report: EvalReport) -> None:
 
     tool_scored = [r for r in scored if r.category == "tool"]
     if tool_scored:
-        report.tool_intelligence_score = sum(r.score for r in tool_scored) / len(tool_scored)
+        report.tool_intelligence_score = sum(r.score for r in tool_scored) / len(
+            tool_scored
+        )
 
     # AES: completion_rate / max(latency_fraction, cost_fraction, step_fraction)
     completion = report.get("task_completion_rate")
@@ -405,6 +450,7 @@ def _compute_composites(report: EvalReport) -> None:
 def _persist_results(trace_id: str, results: list[MetricResult]) -> None:
     try:
         from rubra.core.storage.db import get_storage
+
         storage = get_storage()
         if storage is None:
             return
@@ -434,7 +480,8 @@ def _resolve_metric_set(metrics: MetricSet | list[str]) -> set[str]:
     if isinstance(metrics, str):
         if metrics not in _VALID_SETS:
             raise ValueError(
-                f"Unknown metric set '{metrics}'. Choose from: {', '.join(sorted(_VALID_SETS))}"
+                f"Unknown metric set '{metrics}'. "
+                f"Choose from: {', '.join(sorted(_VALID_SETS))}"
             )
         return {metrics}
     # list of specific metric names — run all categories and filter later

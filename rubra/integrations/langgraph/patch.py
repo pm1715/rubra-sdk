@@ -18,11 +18,13 @@ Usage (bulk-patch a StateGraph before compile):
 Both approaches require the node to run inside a @rubra.agent trace.
 When no trace is active, functions pass through unchanged.
 """
+
 from __future__ import annotations
 
 import functools
 import inspect
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from rubra.core.tracer.context import get_active_trace
 from rubra.core.tracer.models import (
@@ -36,7 +38,8 @@ from rubra.core.tracer.models import (
 
 def rubra_node(func: Callable | None = None, *, name: str | None = None) -> Callable:
     """
-    Decorator that captures a LangGraph node execution as TOOL_CALL + TOOL_RESPONSE spans.
+    Decorator that captures a LangGraph node execution as
+    TOOL_CALL + TOOL_RESPONSE spans.
 
     Works inside an active @rubra.agent trace.
     Silently passes through when no trace is active (safe to leave in production).
@@ -47,14 +50,18 @@ def rubra_node(func: Callable | None = None, *, name: str | None = None) -> Call
     node_name = name or func.__name__
 
     if inspect.iscoroutinefunction(func):
+
         @functools.wraps(func)
         async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
             return await _run_async(func, node_name, args, kwargs)
+
         return async_wrapper
     else:
+
         @functools.wraps(func)
         def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
             return _run_sync(func, node_name, args, kwargs)
+
         return sync_wrapper
 
 
@@ -73,7 +80,8 @@ def patch(graph: Any) -> Any:
     nodes_dict = getattr(graph, "_nodes", None)
     if nodes_dict is None:
         raise TypeError(
-            "rubra.integrations.langgraph.patch() expects a StateGraph (before compile). "
+            "rubra.integrations.langgraph.patch() expects a StateGraph "
+            "(before compile). "
             f"Got: {type(graph).__name__}. Call patch(graph) before graph.compile()."
         )
 

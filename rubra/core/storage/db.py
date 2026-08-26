@@ -3,16 +3,24 @@ SQLite (default) / PostgreSQL storage layer.
 Traces and spans serialized to JSON columns for schema flexibility.
 Single-file SQLite — zero config for first run.
 """
+
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from sqlalchemy import (
-    JSON, Column, DateTime, Float, Integer, String, Text,
-    create_engine, select,
+    JSON,
+    Column,
+    DateTime,
+    Float,
+    Integer,
+    String,
+    Text,
+    create_engine,
+    select,
 )
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
@@ -76,6 +84,7 @@ class RubraStorage:
         if is_memory:
             # StaticPool keeps a single connection so all sessions share the same DB
             from sqlalchemy.pool import StaticPool
+
             kwargs["poolclass"] = StaticPool
 
         self._engine = create_engine(database_url, **kwargs)
@@ -136,7 +145,7 @@ class RubraStorage:
             reason=reason,
             category=category,
             is_deterministic=int(is_deterministic),
-            computed_at=datetime.now(timezone.utc),
+            computed_at=datetime.now(UTC),
             metadata_json=metadata or {},
         )
         with self._Session() as session:
@@ -171,9 +180,13 @@ class RubraStorage:
 
     def get_metric_results(self, trace_id: str) -> list[dict[str, Any]]:
         with self._Session() as session:
-            rows = session.execute(
-                select(MetricResultRow).where(MetricResultRow.trace_id == trace_id)
-            ).scalars().all()
+            rows = (
+                session.execute(
+                    select(MetricResultRow).where(MetricResultRow.trace_id == trace_id)
+                )
+                .scalars()
+                .all()
+            )
             return [
                 {
                     "metric_name": r.metric_name,
@@ -190,6 +203,7 @@ class RubraStorage:
 
 def _row_to_trace(row: TraceRow) -> Trace:
     from rubra.core.tracer.models import TokenUsage
+
     spans = [Span.model_validate(s) for s in (row.spans_json or [])]
     return Trace(
         trace_id=row.trace_id,

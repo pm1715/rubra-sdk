@@ -17,6 +17,7 @@ When no Rubra trace is active the handler is a silent no-op.
 
 Requires: pip install 'rubra[langchain]'
 """
+
 from __future__ import annotations
 
 import time
@@ -55,7 +56,8 @@ class RubraCallbackHandler:
     def __init__(self) -> None:
         _require_langchain()
         self._pending_llm: dict[str, tuple[float, dict]] = {}  # run_id → (t0, kwargs)
-        self._pending_tool: dict[str, tuple[float, str, Span]] = {}  # run_id → (t0, tool_name, call_span)
+        # run_id → (t0, tool_name, call_span)
+        self._pending_tool: dict[str, tuple[float, str, Span]] = {}
 
     # ------------------------------------------------------------------
     # LangChain BaseCallbackHandler interface (duck-typed — no inheritance
@@ -74,7 +76,10 @@ class RubraCallbackHandler:
         if trace is None:
             return
         model = (serialized.get("kwargs") or {}).get("model_name", "unknown")
-        self._pending_llm[str(run_id)] = (time.perf_counter(), {"model": model, "prompts": prompts})
+        self._pending_llm[str(run_id)] = (
+            time.perf_counter(),
+            {"model": model, "prompts": prompts},
+        )
 
     def on_llm_end(
         self,
@@ -92,7 +97,7 @@ class RubraCallbackHandler:
             return
 
         t0, meta = self._pending_llm.pop(run_key)
-        elapsed_ms = (time.perf_counter() - t0) * 1000
+        (time.perf_counter() - t0) * 1000
 
         # Extract token usage (provider-dependent, best-effort)
         llm_output = getattr(response, "llm_output", {}) or {}
@@ -124,7 +129,9 @@ class RubraCallbackHandler:
         span.finish()
         trace.add_span(span)
 
-    def on_llm_error(self, error: Exception, *, run_id: uuid.UUID, **kwargs: Any) -> None:
+    def on_llm_error(
+        self, error: Exception, *, run_id: uuid.UUID, **kwargs: Any
+    ) -> None:
         self._pending_llm.pop(str(run_id), None)
 
     def on_tool_start(

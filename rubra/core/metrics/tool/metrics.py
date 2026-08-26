@@ -7,11 +7,11 @@ agent evaluators) — Rubra's differentiation is breadth (11 distinct signals
 vs. 2-4) and two checks with no found equivalent elsewhere
 (redundant_tool_call_rate, tool_error_recovery_rate), not exclusivity.
 """
+
 from __future__ import annotations
 
 from rubra.core.metrics.execution.metrics import MetricResult
 from rubra.core.tracer.models import SpanStatus, SpanType, Trace
-
 
 # ---------------------------------------------------------------------------
 # 1. tool_selection_precision
@@ -160,7 +160,9 @@ def tool_call_order_score(trace: Trace) -> MetricResult:
     expected_args = trace.expected_tool_args
     if expected_args:
         actual_args = [s.tool_call_data.arguments for s in actual_spans]
-        weighted_len = _weighted_lcs(actual_sequence, expected, actual_args, expected_args)
+        weighted_len = _weighted_lcs(
+            actual_sequence, expected, actual_args, expected_args
+        )
         score = weighted_len / max(len(actual_sequence), len(expected))
         return MetricResult(
             metric_name="tool_call_order_score",
@@ -171,7 +173,11 @@ def tool_call_order_score(trace: Trace) -> MetricResult:
                 f"Weighted LCS {weighted_len:.2f} (argument-aware) vs sequence lengths "
                 f"actual={len(actual_sequence)}, expected={len(expected)}."
             ),
-            metadata={"actual_sequence": actual_sequence, "expected": expected, "mode": "weighted"},
+            metadata={
+                "actual_sequence": actual_sequence,
+                "expected": expected,
+                "mode": "weighted",
+            },
         )
 
     lcs_len = _lcs_length(actual_sequence, expected)
@@ -186,7 +192,11 @@ def tool_call_order_score(trace: Trace) -> MetricResult:
             f"actual={len(actual_sequence)}, expected={len(expected)} "
             "(name-only — pass expected_tool_args for argument-aware scoring)."
         ),
-        metadata={"actual_sequence": actual_sequence, "expected": expected, "mode": "name_only"},
+        metadata={
+            "actual_sequence": actual_sequence,
+            "expected": expected,
+            "mode": "name_only",
+        },
     )
 
 
@@ -216,8 +226,25 @@ def _weighted_lcs(
 
 
 _GROUNDING_STOPWORDS = {
-    "the", "and", "for", "with", "that", "this", "from", "was", "are",
-    "were", "has", "have", "had", "not", "you", "your", "true", "false", "null",
+    "the",
+    "and",
+    "for",
+    "with",
+    "that",
+    "this",
+    "from",
+    "was",
+    "are",
+    "were",
+    "has",
+    "have",
+    "had",
+    "not",
+    "you",
+    "your",
+    "true",
+    "false",
+    "null",
 }
 
 
@@ -270,6 +297,7 @@ def tool_trajectory_equivalence(trace: Trace) -> MetricResult:
         # Without ground truth, can only assess internal consistency:
         # did the agent use its tool outputs? (proxy for valid trajectory)
         from rubra.core.metrics.execution.metrics import tool_output_utilization
+
         util = tool_output_utilization(trace)
         return MetricResult(
             metric_name="tool_trajectory_equivalence",
@@ -283,11 +311,18 @@ def tool_trajectory_equivalence(trace: Trace) -> MetricResult:
 
     # With ground truth: LCS-based similarity between trajectories
     from rubra.core.metrics.tool.metrics import _lcs_length
-    actual_seq = [s.tool_call_data.tool_name for s in trace.tool_call_spans if s.tool_call_data]
+
+    actual_seq = [
+        s.tool_call_data.tool_name for s in trace.tool_call_spans if s.tool_call_data
+    ]
     lcs = _lcs_length(actual_seq, expected_tools)
     union = len(set(actual_seq) | set(expected_tools))
     jaccard = len(set(actual_seq) & set(expected_tools)) / union if union > 0 else 0.0
-    order_score = lcs / max(len(actual_seq), len(expected_tools)) if actual_seq and expected_tools else 0.0
+    order_score = (
+        lcs / max(len(actual_seq), len(expected_tools))
+        if actual_seq and expected_tools
+        else 0.0
+    )
     score = (jaccard + order_score) / 2
 
     return MetricResult(
@@ -364,7 +399,9 @@ def tool_error_recovery_rate(trace: Trace) -> MetricResult:
     Recovery = the agent continues and produces a final output despite the error.
     Score: 1.0 = recovered from all errors, 0.0 = errored and stopped.
     """
-    error_tool_spans = [s for s in trace.tool_call_spans if s.status == SpanStatus.ERROR]
+    error_tool_spans = [
+        s for s in trace.tool_call_spans if s.status == SpanStatus.ERROR
+    ]
 
     if not error_tool_spans:
         return MetricResult(
@@ -439,13 +476,14 @@ def intermediate_step_grounding(trace: Trace) -> MetricResult:
         curr_call = tool_spans[i]
 
         # Find the response for the previous call
+        prev_name = (
+            prev_call.tool_call_data.tool_name if prev_call.tool_call_data else ""
+        )
         prev_response = next(
             (
-                r for r in response_spans
-                if r.tool_response_data
-                and r.tool_response_data.tool_name == (
-                    prev_call.tool_call_data.tool_name if prev_call.tool_call_data else ""
-                )
+                r
+                for r in response_spans
+                if r.tool_response_data and r.tool_response_data.tool_name == prev_name
             ),
             None,
         )
@@ -455,7 +493,11 @@ def intermediate_step_grounding(trace: Trace) -> MetricResult:
 
         checked_transitions += 1
         prev_output = str(prev_response.tool_response_data.output or "").strip()
-        curr_args = str(curr_call.tool_call_data.arguments if curr_call.tool_call_data else "").strip()
+        if curr_call.tool_call_data:
+            curr_args_raw = curr_call.tool_call_data.arguments
+        else:
+            curr_args_raw = ""
+        curr_args = str(curr_args_raw).strip()
 
         # Token-overlap check: does ANY meaningful token from the previous
         # tool's output reappear in the next call's arguments? A fixed
@@ -528,7 +570,10 @@ def tool_argument_completeness(trace: Trace) -> MetricResult:
                 metric_name="tool_argument_completeness",
                 score=None,
                 category="tool",
-                reason="expected_tool_args provided but no calls matched a tool with ground truth.",
+                reason=(
+                    "expected_tool_args provided but no calls matched "
+                    "a tool with ground truth."
+                ),
             )
 
         score = total_score / scored_calls
@@ -553,8 +598,7 @@ def tool_argument_completeness(trace: Trace) -> MetricResult:
         if not args:
             continue
         all_complete = all(
-            v is not None and str(v).strip() != ""
-            for v in args.values()
+            v is not None and str(v).strip() != "" for v in args.values()
         )
         if all_complete:
             complete_calls += 1
@@ -566,10 +610,15 @@ def tool_argument_completeness(trace: Trace) -> MetricResult:
         passed=score >= 0.9,
         category="tool",
         reason=(
-            f"{complete_calls}/{len(tool_spans)} tool calls had complete, non-empty arguments "
+            f"{complete_calls}/{len(tool_spans)} tool calls had complete, "
+            "non-empty arguments "
             "(presence-only — pass expected_tool_args for correctness scoring)."
         ),
-        metadata={"complete_calls": complete_calls, "total": len(tool_spans), "mode": "presence"},
+        metadata={
+            "complete_calls": complete_calls,
+            "total": len(tool_spans),
+            "mode": "presence",
+        },
     )
 
 
@@ -578,8 +627,7 @@ def _arg_overlap_score(actual: dict, expected: dict) -> float:
     if not expected:
         return 1.0
     matched = sum(
-        1 for k, v in expected.items()
-        if k in actual and str(actual[k]) == str(v)
+        1 for k, v in expected.items() if k in actual and str(actual[k]) == str(v)
     )
     return matched / len(expected)
 
@@ -589,7 +637,9 @@ def _arg_overlap_score(actual: dict, expected: dict) -> float:
 # ---------------------------------------------------------------------------
 
 
-def tool_response_latency_score(trace: Trace, max_tool_ms: float = 3000.0) -> MetricResult:
+def tool_response_latency_score(
+    trace: Trace, max_tool_ms: float = 3000.0
+) -> MetricResult:
     """
     Checks whether individual tool calls completed within an acceptable latency.
     Flags tools that are pathologically slow — potential bottlenecks.
@@ -605,7 +655,8 @@ def tool_response_latency_score(trace: Trace, max_tool_ms: float = 3000.0) -> Me
         )
 
     fast_calls = sum(
-        1 for s in tool_spans
+        1
+        for s in tool_spans
         if s.duration_ms is not None and s.duration_ms <= max_tool_ms
     )
     measured = sum(1 for s in tool_spans if s.duration_ms is not None)
@@ -653,9 +704,7 @@ def tool_chain_validity(trace: Trace) -> MetricResult:
     Score: 1.0 = perfectly paired. <1.0 = structural issues.
     """
     call_names = [
-        s.tool_call_data.tool_name
-        for s in trace.tool_call_spans
-        if s.tool_call_data
+        s.tool_call_data.tool_name for s in trace.tool_call_spans if s.tool_call_data
     ]
     response_names = [
         s.tool_response_data.tool_name
@@ -684,7 +733,7 @@ def tool_chain_validity(trace: Trace) -> MetricResult:
     total = max(len(call_names), len(response_names))
     score = paired / total if total > 0 else 1.0
     unpaired_calls = len(calls_copy)
-    unpaired_responses = len([r for r in responses_copy if r not in [c for c in call_names]])
+    unpaired_responses = len([r for r in responses_copy if r not in call_names])
 
     return MetricResult(
         metric_name="tool_chain_validity",
@@ -693,7 +742,8 @@ def tool_chain_validity(trace: Trace) -> MetricResult:
         category="tool",
         reason=(
             f"{paired} matched call/response pairs. "
-            f"Unpaired calls: {unpaired_calls}, unpaired responses: {unpaired_responses}."
+            f"Unpaired calls: {unpaired_calls}, "
+            f"unpaired responses: {unpaired_responses}."
         ),
         metadata={
             "paired": paired,
